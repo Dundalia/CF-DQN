@@ -1,0 +1,13 @@
+[=== Module anaconda/3 loaded ===]
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251211_152407-ugmea1j5
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_atari__1__1765484641
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/ugmea1j5
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+[2025-12-11T15:28:36.810] error: *** JOB 8291021 ON cn-g024 CANCELLED AT 2025-12-11T15:28:36 DUE to SIGNAL Terminated ***
