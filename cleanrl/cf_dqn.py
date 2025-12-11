@@ -59,7 +59,7 @@ class Args:
     """the number of parallel game environments"""
     
     # CF-DQN specific arguments (replaces C51's n_atoms, v_min, v_max)
-    n_frequencies: int = 128
+    n_frequencies: int = 256
     """number of frequency grid points (K)"""
     freq_max: float = 5.0
     """maximum frequency W (grid spans [-W, W])"""
@@ -332,7 +332,7 @@ if __name__ == "__main__":
                     # CF Bellman target:
                     # target = reward_cf * next_cf_scaled * (1 - done) + reward_cf * done
                     # When done=1, future CF = 1 (zero future return)
-                    dones_expanded = data.dones.unsqueeze(-1)  # [batch, 1]
+                    dones_expanded = data.dones.flatten().unsqueeze(-1)  # [batch, 1]
                     cf_future = next_cf_scaled * (1 - dones_expanded) + (1.0 + 0j) * dones_expanded
                     target_cf = cf_reward * cf_future  # [batch, K]
 
@@ -347,6 +347,9 @@ if __name__ == "__main__":
                 cf_at_zero_idx = torch.argmin(torch.abs(q_network.omegas)).item()
                 pred_at_zero = pred_cf[:, cf_at_zero_idx]
                 target_at_zero = target_cf[:, cf_at_zero_idx]
+
+                assert pred_at_zero.dim() == 1, f"pred_at_zero should be 1D, got shape {pred_at_zero.shape}"
+                assert target_at_zero.dim() == 1, f"target_at_zero should be 1D, got shape {target_at_zero.shape}"
                 
                 # Penalty for deviating from |φ(0)| = 1
                 phi_zero_penalty = torch.mean((torch.abs(pred_at_zero) - 1.0)**2 + 
