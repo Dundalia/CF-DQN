@@ -1,0 +1,46 @@
+[=== Module anaconda/3 loaded ===]
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_105152-zislbusi
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__c51_seed2__2__1765554706
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Baselines-Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Baselines-Breakout/runs/zislbusi
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_105152-j2atj0nt
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run AsterixNoFrameskip-v4__c51_seed2__2__1765554706
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Baselines-Asterix
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Baselines-Asterix/runs/j2atj0nt
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_105152-yhmtfg3y
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__c51_seed2__2__1765554706
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Baselines-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Baselines-Seaquest/runs/yhmtfg3y
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_105152-tg8wxp32
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run QbertNoFrameskip-v4__c51_seed2__2__1765554706
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Baselines-Qbert
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Baselines-Qbert/runs/tg8wxp32
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+[2025-12-12T13:51:38.009] error: *** JOB 8292930 ON cn-g003 CANCELLED AT 2025-12-12T13:51:38 DUE TO TIME LIMIT ***

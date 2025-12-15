@@ -316,55 +316,12 @@ if __name__ == "__main__":
                 loss = loss + args.penalty_weight * phi_zero_penalty
 
                 if global_step % 100 == 0:
-                    writer.add_scalar("losses/loss", loss.item(), global_step)
-                    writer.add_scalar("losses/phi_zero_penalty", phi_zero_penalty.item(), global_step)
-                    
-                    # Diagnostic: Check rewards from replay buffer
-                    writer.add_scalar("debug/rewards_mean", data.rewards.mean().item(), global_step)
-                    writer.add_scalar("debug/rewards_std", data.rewards.std().item(), global_step)
-                    writer.add_scalar("debug/rewards_min", data.rewards.min().item(), global_step)
-                    writer.add_scalar("debug/rewards_max", data.rewards.max().item(), global_step)
-                    writer.add_scalar("debug/dones_mean", data.dones.float().mean().item(), global_step)
-                    
-                    # Diagnostic: Check reward CF properties
-                    cf_reward_mag = torch.abs(cf_reward)
-                    writer.add_scalar("debug/reward_cf_magnitude_mean", cf_reward_mag.mean().item(), global_step)
-                    writer.add_scalar("debug/reward_cf_magnitude_at_zero", cf_reward_mag[:, cf_at_zero_idx].mean().item(), global_step)
-                    
-                    # Log Q-values for all actions (using current network)
+                    # Match DQN logging: td_loss and q_values only
+                    writer.add_scalar("losses/td_loss", loss.item(), global_step)
+                    # Compute Q-values for taken actions to match DQN's losses/q_values
                     with torch.no_grad():
-                        all_cf, all_q_values = q_network.get_all_cf(data.observations)
-                        writer.add_scalar("losses/q_values_all_mean", all_q_values.mean().item(), global_step)
-                        writer.add_scalar("losses/q_values_all_max", all_q_values.max().item(), global_step)
-                        writer.add_scalar("losses/q_values_all_std", all_q_values.std().item(), global_step)
-                        
-                        # Check Q-value variance across actions (should increase as learning progresses)
-                        q_variance_per_sample = all_q_values.var(dim=1).mean()
-                        writer.add_scalar("losses/q_values_action_variance", q_variance_per_sample.item(), global_step)
-                    
-                    # CF-specific diagnostics - verify normalization
-                    cf_at_zero = pred_cf[:, cf_at_zero_idx]
-                    writer.add_scalar("cf/magnitude_at_zero", torch.abs(cf_at_zero).mean().item(), global_step)
-                    writer.add_scalar("cf/max_magnitude", torch.abs(pred_cf).max().item(), global_step)
-                    writer.add_scalar("cf/mean_magnitude", torch.abs(pred_cf).mean().item(), global_step)
-                    
-                    # Log target CF properties
-                    target_mag_at_zero = torch.abs(target_cf[:, cf_at_zero_idx]).mean()
-                    writer.add_scalar("cf/target_magnitude_at_zero", target_mag_at_zero.item(), global_step)
-                    writer.add_scalar("cf/target_max_magnitude", torch.abs(target_cf).max().item(), global_step)
-                    
-                    # Check if pred and target are diverging
-                    cf_diff = torch.abs(pred_cf - target_cf).mean()
-                    writer.add_scalar("cf/pred_target_diff", cf_diff.item(), global_step)
-                    
-                    # Log next state Q-values to see if bootstrapping is working
-                    writer.add_scalar("debug/next_q_values_mean", next_q_values.mean().item(), global_step)
-                    writer.add_scalar("debug/next_q_values_max", next_q_values.max().item(), global_step)
-                    
-                    # Check action selection - are we picking different actions?
-                    unique_actions = torch.unique(next_actions).numel()
-                    writer.add_scalar("debug/unique_next_actions", unique_actions, global_step)
-                    
+                        q_values_taken = collapse_cf_to_mean(q_network.omegas, pred_cf.unsqueeze(1), max_w=q_network.collapse_max_w).squeeze()
+                    writer.add_scalar("losses/q_values", q_values_taken.mean().item(), global_step)
                     print("SPS:", int(global_step / (time.time() - start_time)))
                     writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 

@@ -1,0 +1,382 @@
+[=== Module anaconda/3 loaded ===]
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run hk1l3yvw
+wandb: setting up run 9d3m6c8c
+wandb: setting up run h4bvxdhg
+wandb: setting up run 8vbb1z8g
+wandb: setting up run gzmta2s1
+wandb: setting up run 00idnapv
+wandb: setting up run 86chosxq
+wandb: setting up run 5kkfp4l9
+wandb: setting up run 1gl0pqpv
+wandb: setting up run o25tl4pm
+wandb: setting up run 4vjj0vra
+wandb: setting up run 079mf8by
+wandb: setting up run 23h5ucfw
+wandb: setting up run m6bk3hkh
+wandb: setting up run mct641lj
+wandb: setting up run ojsqbdlx
+wandb: setting up run zhdf3zgo
+wandb: setting up run yxwz6dnh
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-tyia4x2h
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq128_max2_seed4__4__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/tyia4x2h
+wandb: setting up run 306vegx5
+wandb: setting up run 7w2wavox
+wandb: setting up run uy8cc4g5
+wandb: setting up run kdu843zt
+wandb: setting up run xwntxygl
+wandb: setting up run bh8h7c8n
+wandb: setting up run y1tggesb
+wandb: setting up run s1peg22l
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-9d3m6c8c
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq64_max5_seed3__3__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/9d3m6c8c
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-1i9ywz3c
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq128_max5_seed1__1__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: Tracking run with wandb version 0.22.3
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/1i9ywz3c
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-23h5ucfw
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq64_max5_seed2__2__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/23h5ucfw
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-lv3rjtb1
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq128_max5_seed4__4__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/lv3rjtb1
+wandb: setting up run xn25xzne
+wandb: setting up run egyrswik
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-kdu843zt
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq64_max5_seed1__1__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/kdu843zt
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-o25tl4pm
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq128_max2_seed2__2__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/o25tl4pm
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-xwntxygl
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq64_max2_seed1__1__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/xwntxygl
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-uy8cc4g5
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq128_max5_seed4__4__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/uy8cc4g5
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-1gl0pqpv
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq128_max2_seed1__1__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/1gl0pqpv
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-y1tggesb
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq64_max5_seed1__1__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/y1tggesb
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-mct641lj
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq64_max2_seed3__3__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/mct641lj
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-egyrswik
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq128_max2_seed1__1__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/egyrswik
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-xn25xzne
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq128_max2_seed3__3__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/xn25xzne
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-jqfshcut
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq64_max2_seed2__2__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/jqfshcut
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-079mf8by
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq64_max2_seed3__3__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/079mf8by
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-8vbb1z8g
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq64_max5_seed4__4__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/8vbb1z8g
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-4vjj0vra
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq64_max2_seed1__1__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/4vjj0vra
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-h4bvxdhg
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq64_max2_seed2__2__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/h4bvxdhg
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-yxwz6dnh
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq128_max2_seed2__2__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/yxwz6dnh
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-m6bk3hkh
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq64_max5_seed3__3__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/m6bk3hkh
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-hk1l3yvw
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq128_max5_seed1__1__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/hk1l3yvw
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-5kkfp4l9
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq128_max5_seed3__3__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/5kkfp4l9
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-zhdf3zgo
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq128_max2_seed3__3__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/zhdf3zgo
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-ojsqbdlx
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq128_max5_seed2__2__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/ojsqbdlx
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-86chosxq
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq64_max5_seed2__2__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/86chosxq
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-gzmta2s1
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq64_max2_seed4__4__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/gzmta2s1
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-00idnapv
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq128_max2_seed4__4__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/00idnapv
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-306vegx5
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq128_max5_seed2__2__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/306vegx5
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-7w2wavox
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq64_max2_seed4__4__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/7w2wavox
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-bh8h7c8n
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq128_max5_seed3__3__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/bh8h7c8n
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_070621-s1peg22l
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq64_max5_seed4__4__1765541170
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/s1peg22l
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+[2025-12-12T07:17:08.890] error: *** JOB 8292916 ON cn-g003 CANCELLED AT 2025-12-12T07:17:08 DUE to SIGNAL Terminated ***

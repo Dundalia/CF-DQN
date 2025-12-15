@@ -1,0 +1,48 @@
+[=== Module anaconda/3 loaded ===]
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run 75bmwrnt
+wandb: setting up run vfusgl8c
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251214_015742-mhj0xf3u
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq32_max5_seed3__3__1765695455
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/mhj0xf3u
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251214_015742-d2ur7y5v
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq32_max2_seed3__3__1765695455
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/d2ur7y5v
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251214_015742-vfusgl8c
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq64_max2_seed3__3__1765695455
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/vfusgl8c
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251214_015742-75bmwrnt
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq64_max5_seed3__3__1765695455
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/75bmwrnt
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+[2025-12-14T04:57:52.121] error: *** JOB 8292943 ON cn-g003 CANCELLED AT 2025-12-14T04:57:52 DUE TO TIME LIMIT ***

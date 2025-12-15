@@ -1,0 +1,50 @@
+[=== Module anaconda/3 loaded ===]
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run 8dgoz4wz
+wandb: setting up run 1938txm6
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_225711-6x21fkgp
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq64_max2_seed2__2__1765684624
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/6x21fkgp
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_225711-b9s3ydfq
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq64_max5_seed2__2__1765684624
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/b9s3ydfq
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_225711-8dgoz4wz
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq32_max2_seed2__2__1765684624
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/8dgoz4wz
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_225711-1938txm6
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq32_max5_seed2__2__1765684624
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/1938txm6
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+/network/scratch/b/baldelld/RL/CF-DQN/cleanrl/cf_dqn_atari.py:263: DeprecationWarning: __array__ implementation doesn't accept a copy keyword, so passing copy=False failed. __array__ must implement 'dtype' and 'copy' keyword arguments. To learn more, see the migration guide https://numpy.org/devdocs/numpy_2_0_migration_guide.html#adapting-to-changes-in-the-copy-keyword
+  real_next_obs[idx] = infos["final_observation"][idx]
+[2025-12-14T01:57:22.102] error: *** JOB 8292942 ON cn-g003 CANCELLED AT 2025-12-14T01:57:22 DUE TO TIME LIMIT ***

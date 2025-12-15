@@ -1,0 +1,52 @@
+[=== Module anaconda/3 loaded ===]
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run bz01a5bz
+wandb: setting up run 07eycl7u
+wandb: setting up run jbxodwzl
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_195639-v3dwr0xy
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq64_max5_seed1__1__1765673792
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/v3dwr0xy
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_195639-jbxodwzl
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq64_max2_seed1__1__1765673792
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/jbxodwzl
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_195639-bz01a5bz
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq32_max5_seed1__1__1765673792
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/bz01a5bz
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_195639-07eycl7u
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run SeaquestNoFrameskip-v4__cf_dqn_freq32_max2_seed1__1__1765673792
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Seaquest/runs/07eycl7u
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+wandb: 409 encountered ({"errors":[{"message":"project may already be created, please retry","path":["upsertBucket"]}],"data":{"upsertBucket":null}}), retrying request
+wandb: 409 encountered ({"errors":[{"message":"project may already be created, please retry","path":["upsertBucket"]}],"data":{"upsertBucket":null}}), retrying request
+wandb: 409 encountered ({"errors":[{"message":"project may already be created, please retry","path":["upsertBucket"]}],"data":{"upsertBucket":null}}), retrying request
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+[2025-12-13T22:56:50.106] error: *** JOB 8292941 ON cn-g003 CANCELLED AT 2025-12-13T22:56:50 DUE TO TIME LIMIT ***

@@ -3,11 +3,11 @@
   warnings.warn(message)
 wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
 wandb: Tracking run with wandb version 0.22.3
-wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251211_153115-o462sqb4
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251211_183135-fa8ys9oh
 wandb: Run `wandb offline` to turn off syncing.
-wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq128_max2__1__1765485065
+wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq128_max5__1__1765495889
 wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
-wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/o462sqb4
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/fa8ys9oh
 A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
 [Powered by Stella]
-[2025-12-11T18:31:16.082] error: *** JOB 8291045 ON cn-g024 CANCELLED AT 2025-12-11T18:31:16 DUE TO TIME LIMIT ***
+[2025-12-11T21:31:20.095] error: *** JOB 8291046 ON cn-g024 CANCELLED AT 2025-12-11T21:31:20 DUE TO TIME LIMIT ***

@@ -1,0 +1,285 @@
+
+======== GPU REPORT ========
+
+==============NVSMI LOG==============
+
+Timestamp                                 : Fri Dec 12 07:03:26 2025
+Driver Version                            : 580.95.05
+CUDA Version                              : 13.0
+
+Attached GPUs                             : 4
+GPU 00000000:01:00.0
+    Accounting Mode                       : Enabled
+    Accounting Mode Buffer Size           : 4000
+    Accounted Processes
+        Process ID                        : 1420741
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420734
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 666 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420740
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420739
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 666 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420735
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 666 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420738
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 666 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420737
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 666 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420736
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 666 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+
+GPU 00000000:41:00.0
+    Accounting Mode                       : Enabled
+    Accounting Mode Buffer Size           : 4000
+    Accounted Processes
+        Process ID                        : 1420748
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420743
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420747
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420742
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420745
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420749
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420744
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420746
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+
+GPU 00000000:81:00.0
+    Accounting Mode                       : Enabled
+    Accounting Mode Buffer Size           : 4000
+    Accounted Processes
+        Process ID                        : 1420757
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 686 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420751
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420754
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420750
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420753
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420756
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 686 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420755
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 686 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420752
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+
+GPU 00000000:C1:00.0
+    Accounting Mode                       : Enabled
+    Accounting Mode Buffer Size           : 4000
+    Accounted Processes
+        Process ID                        : 1420761
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420760
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420758
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 666 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420759
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 666 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420762
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420764
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420763
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 688 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+        Process ID                        : 1420765
+            GPU Utilization               : 12 %
+            Memory Utilization            : 0 %
+            Max memory usage              : 686 MiB
+            Time                          : 0 ms
+            Is Running                    : 1
+
+Fri Dec 12 07:03:26 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.95.05              Driver Version: 580.95.05      CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-SXM4-80GB          On  |   00000000:01:00.0 Off |                    0 |
+| N/A   37C    P0            136W /  500W |    5409MiB /  81920MiB |    100%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA A100-SXM4-80GB          On  |   00000000:41:00.0 Off |                    0 |
+| N/A   33C    P0            140W /  500W |    5541MiB /  81920MiB |    100%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   2  NVIDIA A100-SXM4-80GB          On  |   00000000:81:00.0 Off |                    0 |
+| N/A   35C    P0            123W /  500W |    5535MiB /  81920MiB |    100%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   3  NVIDIA A100-SXM4-80GB          On  |   00000000:C1:00.0 Off |                    0 |
+| N/A   33C    P0            134W /  500W |    5495MiB /  81920MiB |    100%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A         1420734      C   python                                  666MiB |
+|    0   N/A  N/A         1420735      C   python                                  666MiB |
+|    0   N/A  N/A         1420736      C   python                                  666MiB |
+|    0   N/A  N/A         1420737      C   python                                  666MiB |
+|    0   N/A  N/A         1420738      C   python                                  666MiB |
+|    0   N/A  N/A         1420739      C   python                                  666MiB |
+|    0   N/A  N/A         1420740      C   python                                  688MiB |
+|    0   N/A  N/A         1420741      C   python                                  688MiB |
+|    1   N/A  N/A         1420742      C   python                                  688MiB |
+|    1   N/A  N/A         1420743      C   python                                  688MiB |
+|    1   N/A  N/A         1420744      C   python                                  688MiB |
+|    1   N/A  N/A         1420745      C   python                                  688MiB |
+|    1   N/A  N/A         1420746      C   python                                  688MiB |
+|    1   N/A  N/A         1420747      C   python                                  688MiB |
+|    1   N/A  N/A         1420748      C   python                                  688MiB |
+|    1   N/A  N/A         1420749      C   python                                  688MiB |
+|    2   N/A  N/A         1420750      C   python                                  688MiB |
+|    2   N/A  N/A         1420751      C   python                                  688MiB |
+|    2   N/A  N/A         1420752      C   python                                  688MiB |
+|    2   N/A  N/A         1420753      C   python                                  688MiB |
+|    2   N/A  N/A         1420754      C   python                                  688MiB |
+|    2   N/A  N/A         1420755      C   python                                  686MiB |
+|    2   N/A  N/A         1420756      C   python                                  686MiB |
+|    2   N/A  N/A         1420757      C   python                                  686MiB |
+|    3   N/A  N/A         1420758      C   python                                  666MiB |
+|    3   N/A  N/A         1420759      C   python                                  666MiB |
+|    3   N/A  N/A         1420760      C   python                                  688MiB |
+|    3   N/A  N/A         1420761      C   python                                  688MiB |
+|    3   N/A  N/A         1420762      C   python                                  688MiB |
+|    3   N/A  N/A         1420763      C   python                                  688MiB |
+|    3   N/A  N/A         1420764      C   python                                  688MiB |
+|    3   N/A  N/A         1420765      C   python                                  686MiB |
++-----------------------------------------------------------------------------------------+

@@ -1,0 +1,49 @@
+[=== Module anaconda/3 loaded ===]
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+/network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
+  warnings.warn(message)
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run 3uyz2nme
+wandb: setting up run juz32ewc
+wandb: setting up run q2b14af1
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_135537-n5g7p60a
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run AsterixNoFrameskip-v4__cf_dqn_freq32_max5_seed2__2__1765652130
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Asterix
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Asterix/runs/n5g7p60a
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_135537-3uyz2nme
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run AsterixNoFrameskip-v4__cf_dqn_freq64_max5_seed2__2__1765652130
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Asterix
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Asterix/runs/3uyz2nme
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_135537-juz32ewc
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run AsterixNoFrameskip-v4__cf_dqn_freq64_max2_seed2__2__1765652130
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Asterix
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Asterix/runs/juz32ewc
+wandb: Tracking run with wandb version 0.22.3
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251213_135537-q2b14af1
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run AsterixNoFrameskip-v4__cf_dqn_freq32_max2_seed2__2__1765652130
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/CF-DQN-Asterix
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/CF-DQN-Asterix/runs/q2b14af1
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
+[Powered by Stella]
+[2025-12-13T16:55:49.113] error: *** JOB 8292939 ON cn-g003 CANCELLED AT 2025-12-13T16:55:49 DUE TO TIME LIMIT ***

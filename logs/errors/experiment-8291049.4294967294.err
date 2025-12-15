@@ -2,12 +2,13 @@
 /network/scratch/b/baldelld/RL/venv/lib/python3.11/site-packages/tyro/_parsers.py:353: UserWarning: The field `wandb-entity` is annotated with type `<class 'str'>`, but the default value `None` has type `<class 'NoneType'>`. We'll try to handle this gracefully, but it may cause unexpected behavior.
   warnings.warn(message)
 wandb: Currently logged in as: dundalia (sarath-chandar) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run 5m2e3tbo
 wandb: Tracking run with wandb version 0.22.3
-wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251211_153115-o462sqb4
+wandb: Run data is saved locally in /network/scratch/b/baldelld/RL/CF-DQN/wandb/run-20251212_033238-5m2e3tbo
 wandb: Run `wandb offline` to turn off syncing.
-wandb: Syncing run BreakoutNoFrameskip-v4__cf_dqn_freq128_max2__1__1765485065
-wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Breakout
-wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Breakout/runs/o462sqb4
+wandb: Syncing run PongNoFrameskip-v4__cf_dqn_freq128_max2__1__1765528351
+wandb: ⭐️ View project at https://wandb.ai/sarath-chandar/Pong
+wandb: 🚀 View run at https://wandb.ai/sarath-chandar/Pong/runs/5m2e3tbo
 A.L.E: Arcade Learning Environment (version 0.8.1+53f58b7)
 [Powered by Stella]
-[2025-12-11T18:31:16.082] error: *** JOB 8291045 ON cn-g024 CANCELLED AT 2025-12-11T18:31:16 DUE TO TIME LIMIT ***
+[2025-12-12T04:00:58.202] error: *** JOB 8291049 ON cn-g024 CANCELLED AT 2025-12-12T04:00:58 DUE to SIGNAL Terminated ***
