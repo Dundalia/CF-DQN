@@ -38,6 +38,8 @@ if [[ "$SWEEP_ID" == *"YOUR_ENTITY"* ]]; then
     exit 1
 fi
 
+source .ven/bin/activate
+
 # Create log directory if it doesn't exist
 mkdir -p slurm/logs
 
@@ -53,7 +55,7 @@ echo "Start time:  $(date)"
 echo "=========================================="
 
 # Run wandb agent
-srun wandb agent ${SWEEP_ID}
+#srun wandb agent ${SWEEP_ID}
 
 echo "=========================================="
 echo "Agent ${SLURM_ARRAY_TASK_ID} completed"
