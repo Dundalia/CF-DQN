@@ -27,7 +27,7 @@
 ################################################################################
 
 # ===== EDIT THIS LINE WITH YOUR SWEEP ID =====
-SWEEP_ID="${SWEEP_ID:-fatty_data/CF-DQN-cleanrl/v5ehvm46}"
+SWEEP_ID="${SWEEP_ID:-fatty_data/CF-DQN-cleanrl/4cnvu18b}"
 # ==============================================
 
 # Validate sweep ID

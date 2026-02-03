@@ -12,13 +12,10 @@ parameters:
     values: [1.0, 2.0, 4.0, 8.0, 20]
   penalty_weight:
     values: [0.0, 1.0, 5.0, 10.0]
-  # Fixed parameters
   env_id:
     value: "CartPole-v1"
   total_timesteps:
     value: 100000
-  track:
-    value: true
   learning_rate:
     value: 2.5e-4
   gamma:
@@ -33,3 +30,10 @@ parameters:
     value: 10
   target_network_frequency:
     value: 500
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - --track
+  - ${args_no_hyphens}
