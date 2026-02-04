@@ -292,7 +292,7 @@ def interpolate_cf_polar(
 # CF Collapse (Gaussian Method)
 # -----------------------------------------------------------------------------
 
-def collapse_cf_to_mean(
+def collapse_cf_to_mean( #! THIS IS WHAT CAUSES THE INSTABILITY PROBLEM
     omegas: torch.Tensor,
     cf: torch.Tensor,
     max_w: float = 2.0,
