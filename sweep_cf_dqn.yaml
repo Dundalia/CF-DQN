@@ -3,6 +3,7 @@ method: grid
 metric:
   name: charts/episodic_return
   goal: maximize
+  summary: mean
 parameters:
   seed:
     values: [1, 2, 3]
@@ -36,4 +37,4 @@ command:
   - python
   - ${program}
   - --track
-  - ${args_no_hyphens}
+  - ${args}

@@ -27,7 +27,7 @@
 ################################################################################
 
 # ===== EDIT THIS LINE WITH YOUR SWEEP ID =====
-SWEEP_ID="${SWEEP_ID:-fatty_data/CF-DQN-cleanrl/4cnvu18b}"
+SWEEP_ID="${SWEEP_ID:-fatty_data/CF-DQN-cleanrl/r6qlovfv}"
 # ==============================================
 
 # Validate sweep ID
@@ -37,8 +37,6 @@ if [[ "$SWEEP_ID" == *"YOUR_ENTITY"* ]]; then
     echo "Then edit sweep_cf_dqn_cartpolev1.sh with the sweep ID"
     exit 1
 fi
-
-#uv sync
 
 # Create log directory if it doesn't exist
 mkdir -p slurm/logs
