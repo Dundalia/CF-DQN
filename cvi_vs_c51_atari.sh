@@ -69,14 +69,28 @@ echo "GPU:      ${CUDA_VISIBLE_DEVICES}"
 echo "Start:    $(date)"
 echo "=========================================="
 
-srun uv run python ${SCRIPT} \
+# uv writes to the shared .venv — serialize setup across all array tasks to
+# avoid race conditions (corrupted numpy, missing RECORD files, Remote I/O
+# error 121 from scratch filesystem overload when 12 tasks write concurrently).
+export UV_LINK_MODE=copy
+SETUP_LOCK="${SLURM_SUBMIT_DIR}/.venv_setup.lock"
+(
+    flock -x 9
+    echo "[Task ${SLURM_ARRAY_TASK_ID}] Acquiring lock — setting up environment..."
+    uv sync --frozen --quiet
+    uv pip install ".[atari]" --quiet
+    echo "[Task ${SLURM_ARRAY_TASK_ID}] Environment ready — releasing lock."
+) 9>"${SETUP_LOCK}"
+
+# --no-sync: skip per-task re-sync, the locked step above already ensured
+# the venv is correct. This prevents any concurrent writes to .venv at runtime.
+srun uv run --no-sync python ${SCRIPT} \
     --env-id ${ENV_ID} \
     --seed ${SEED} \
     --total-timesteps 10000000 \
     --wandb-project-name CVI-DQN \
     --track
 
-echo "=========================================="
 echo "Task ${SLURM_ARRAY_TASK_ID} completed"
-echo "End: $(date)"
+echo "End:      $(date)"
 echo "=========================================="
