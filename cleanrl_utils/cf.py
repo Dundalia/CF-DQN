@@ -479,3 +479,69 @@ def complex_mse_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     diff = pred - target
     return (diff.real ** 2 + diff.imag ** 2).mean()
 
+
+def weighted_complex_mse_loss(
+    pred: torch.Tensor,
+    target: torch.Tensor,
+    omegas: torch.Tensor,
+    sigma_w: float = 0.3,
+) -> torch.Tensor:
+    """
+    Frequency-weighted complex MSE loss.
+    
+    Applies Gaussian weighting centered at ω=0 so that
+    low-frequency (mean-encoding) terms dominate the gradient.
+    This restores loss convexity even when ω_max × Q_max >> π.
+    
+    Parameters
+    ----------
+    pred : torch.Tensor
+        Predicted CF, shape [batch, K] (complex).
+    target : torch.Tensor
+        Target CF, shape [batch, K] (complex).
+    omegas : torch.Tensor
+        Frequency grid, shape [K].
+    sigma_w : float
+        Std-dev of Gaussian weight. Smaller → more focus on ω≈0 → more convex.
+        Rule of thumb: σ_w ≈ π / (3 × Q_max_expected).
+    
+    Returns
+    -------
+    loss : torch.Tensor
+        Scalar loss value.
+    """
+    # Gaussian weights: w(ω) = exp(-ω²/(2σ²))  [K]
+    weights = torch.exp(-0.5 * (omegas / sigma_w) ** 2)
+    weights = weights / weights.sum()  # normalize to sum=1
+    
+    # Per-element squared error: [batch, K]
+    diff = pred - target
+    loss_per_freq = diff.real ** 2 + diff.imag ** 2
+    
+    # Weighted sum over frequencies, then mean over batch
+    return (loss_per_freq * weights.unsqueeze(0)).sum(dim=-1).mean()
+
+
+def weighted_complex_huber_loss(
+    pred: torch.Tensor,
+    target: torch.Tensor,
+    omegas: torch.Tensor,
+    sigma_w: float = 0.3,
+    delta: float = 1.0,
+) -> torch.Tensor:
+    """
+    Frequency-weighted Huber loss for complex tensors.
+    Combines outlier robustness of Huber with convexity from Gaussian weighting.
+    """
+    weights = torch.exp(-0.5 * (omegas / sigma_w) ** 2)
+    weights = weights / weights.sum()
+    
+    diff = pred - target
+    abs_diff = torch.abs(diff)  # [batch, K]
+    
+    quadratic = 0.5 * (abs_diff ** 2)
+    linear = delta * (abs_diff - 0.5 * delta)
+    loss_per_freq = torch.where(abs_diff <= delta, quadratic, linear)
+    
+    return (loss_per_freq * weights.unsqueeze(0)).sum(dim=-1).mean()
+
