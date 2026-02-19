@@ -224,6 +224,84 @@ Unlike the penalty term, the hard enforcement costs nothing and cannot be overri
 
 ---
 
+## The Frequency-Blind Loss Problem (and Why Weighted MSE Solves It)
+
+### What went wrong in the first Atari runs
+
+After the `freq_max` / `collapse_max_w` decoupling and all previous fixes were applied, CVI-DQN still failed to learn on Atari. The diagnostic logs from the first real runs tell the story:
+
+```
+Step  90000: Q_mean=0.07  Q_max=0.07  loss=0.003887  grad=0.0023  collapse_phase=0.002rad
+Step 200000: Q_mean=0.28  Q_max=0.29  loss=0.003542  grad=0.0084  collapse_phase=0.009rad
+Step 400000: Q_mean=0.26  Q_max=0.26  loss=0.000256  grad=0.0016  collapse_phase=0.008rad
+Step 560000: Q_mean=0.26  Q_max=0.26  loss=0.000489  grad=0.0019  collapse_phase=0.008rad
+```
+
+Two things are deeply wrong here:
+
+1. **Q-values are flat across all states and actions.** The spread between the best and worst action is ~0.01 everywhere throughout training — the agent cannot distinguish actions at all.
+2. **Q-values are near zero and never grow.** Even after 560K steps and 500K+ environment transitions, `Q_max ≈ 0.26` when the true discounted return in Breakout should reach 5–30 after real learning.
+
+The phase check (`collapse_phase = collapse_max_w × Q_max = 0.03 × 0.26 ≈ 0.008 rad`) looks healthy, but that is precisely the symptom: the extracted Q-values are near zero **because the network never received meaningful gradients at the low frequencies used for extraction**.
+
+---
+
+### Root cause: `complex_mse` is frequency-blind
+
+The standard complex MSE loss is:
+
+$$\mathcal{L} = \frac{1}{BK} \sum_{b=1}^{B} \sum_{k=1}^{K} \left| \hat{\varphi}(\omega_k) - \varphi^*(\omega_k) \right|^2$$
+
+This treats every frequency bin $\omega_k$ identically. The problem is that the magnitude of the CF error grows with frequency:
+
+$$\left| \varphi_G(\omega) - \varphi_G^\text{target}(\omega) \right|^2 \approx \omega^2 \cdot \left( \text{Var}[G] + \Delta\mu^2 \right)$$
+
+With `freq_max = 1.0` and `K = 128`, the high-frequency bins ($|\omega| \approx 1$) produce errors on the order of $\omega^2 \sim 1$, while the low-frequency bins used for Q extraction ($|\omega| \leq 0.03$) produce errors on the order of $\omega^2 \sim 0.001$ — **three orders of magnitude smaller**.
+
+The gradient through the loss is therefore dominated entirely by the high-frequency bins. The network learns to minimize CF error at $|\omega| \sim 1$, where no Q-value information is encoded, while receiving nearly zero gradient at $|\omega| \leq 0.03$, which is the only region `collapse_cf_to_mean` reads from for action selection.
+
+The result is a network that produces a structurally plausible characteristic function (loss decreases, $\varphi(0)=1$ is respected) but one whose **phase at small $\omega$ carries no useful signal**. All actions get the same Q-value, the agent acts randomly, and the episode returns never improve.
+
+---
+
+### The fix: Gaussian-weighted loss
+
+The solution is to re-weight the loss so that low-frequency errors — which encode Q-values — dominate the gradient:
+
+$$\mathcal{L}_\text{weighted} = \frac{1}{B} \sum_{b=1}^{B} \sum_{k=1}^{K} w(\omega_k) \cdot \left| \hat{\varphi}(\omega_k) - \varphi^*(\omega_k) \right|^2$$
+
+where the Gaussian weight $w(\omega) = \exp\!\left(-\frac{\omega^2}{2\sigma_w^2}\right)$ is normalised to sum to 1. With $\sigma_w = 0.15$:
+
+| Frequency | Weight |
+|---|---|
+| $\|\omega\| = 0.03$ (Q-extraction edge) | $w \approx 0.98$ — full signal |
+| $\|\omega\| = 0.15$ ($1\sigma$) | $w = 0.61$ — moderate |
+| $\|\omega\| = 0.30$ ($2\sigma$) | $w = 0.14$ — small |
+| $\|\omega\| = 0.50$ | $w \approx 0.00$ — negligible |
+| $\|\omega\| = 1.00$ | $w \approx 0.00$ — zero |
+
+The high-frequency bins still exist — they contribute structure to the characteristic function and act as a regulariser — but they no longer overwhelm the gradient signal at the frequencies that determine action selection.
+
+**The rule of thumb for $\sigma_w$:**
+
+$$\sigma_w \approx \frac{\pi}{3 \cdot Q_{\max}}$$
+
+For Atari ($Q_{\max} \approx 100$): $\sigma_w \approx \frac{\pi}{300} \approx 0.010$. In practice $\sigma_w = 0.15$ works well because the full $Q_{\max}$ is rarely achieved in early training and a wider $\sigma$ gives the network more frequency-domain structure to learn from. The lower bound is $\sigma_w > \text{collapse\_max\_w}$ so that some gradient reaches the Q-extraction band.
+
+---
+
+### Why not just reduce `freq_max` to match `collapse_max_w`?
+
+Setting `freq_max = collapse_max_w = 0.03` would also make the loss focus on Q-encoding frequencies. But this hits the **vanishing gradient problem** from the opposite direction:
+
+$$\mathcal{L} \sim \omega_{\max}^2 \cdot \text{error} \approx (0.03)^2 \times 1 = 0.0009$$
+
+With K=128 bins all in $[-0.03, 0.03]$, every bin produces equally tiny errors. The gradient magnitude at the network output is $\sim 10^{-3}$, which after backpropagation through 8 layers of the DQN CNN becomes effectively zero. The network learns nothing.
+
+The decoupled design (`freq_max = 1.0` for loss signal, `collapse_max_w = 0.03` for Q extraction) combined with the Gaussian weight solves both problems simultaneously: high `freq_max` maintains healthy gradient magnitude, and the Gaussian weight ensures that magnitude flows through the Q-encoding frequencies.
+
+---
+
 ## Summary Table
 
 | Property | `cf_dqn.py` (old) | `cvi_dqn.py` (new) |

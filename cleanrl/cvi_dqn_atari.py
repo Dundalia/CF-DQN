@@ -90,10 +90,10 @@ class Args:
     """maximum frequency W for CF grid — controls gradient signal strength. DECOUPLED from collapse_max_w."""
     collapse_max_w: float = 0.03
     """max |omega| for Q-value extraction. MUST satisfy collapse_max_w * Q_max < π. 0.03*100=3.0<π"""
-    sigma_w: float = 0.3
-    """Gaussian weighting std for weighted loss types"""
-    loss_type: str = "complex_mse"
-    """loss function: complex_mse | complex_huber | weighted_mse | weighted_huber"""
+    sigma_w: float = 0.15
+    """Gaussian weighting std for weighted loss types. Smaller → more focus on low-ω (Q-encoding). 0.15 gives strong weight at |ω|<0.3"""
+    loss_type: str = "weighted_mse"
+    """loss function: complex_mse | complex_huber | weighted_mse | weighted_huber. weighted_mse recommended for Atari."""
     max_grad_norm: float = 10.0
     """gradient clipping norm (0 to disable)"""
 
@@ -105,8 +105,8 @@ class Args:
     """whether to use Polyak averaging instead of hard updates (recommended for CVI)"""
 
     # Standard DQN arguments (matching C51 Atari defaults)
-    buffer_size: int = 1000000
-    """the replay memory buffer size"""
+    buffer_size: int = 500000
+    """the replay memory buffer size (500K keeps RAM under 16GB for 84x84x4 uint8 frames)"""
     gamma: float = 0.99
     """the discount factor gamma"""
     target_network_frequency: int = 1
@@ -392,8 +392,7 @@ if __name__ == "__main__":
                     writer.add_scalar("losses/q_values", all_q_values.mean().item(), global_step)
                     writer.add_scalar("losses/q_values_max", all_q_values.max().item(), global_step)
 
-                    # Phase safety check — based on collapse_max_w (not freq_max)
-                    # Only the low-ω bins used for Q extraction need to be phase-safe
+                    # Phase safety check
                     max_q = abs(all_q_values.max().item())
                     collapse_phase = args.collapse_max_w * max_q
                     writer.add_scalar("debug/collapse_phase", collapse_phase, global_step)
@@ -411,12 +410,85 @@ if __name__ == "__main__":
                     writer.add_scalar("debug/gradient_norm", total_grad_norm, global_step)
 
                     writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
+                    writer.add_scalar("charts/epsilon", epsilon, global_step)
 
+                    # === Per-frequency-band diagnostics ===
+                    with torch.no_grad():
+                        omegas_diag = q_network.omegas
+                        low_mask = (omegas_diag.abs() <= 0.1)
+                        mid_mask = (omegas_diag.abs() > 0.1) & (omegas_diag.abs() <= 0.4)
+                        high_mask = (omegas_diag.abs() > 0.4)
+
+                        # Per-band loss breakdown
+                        diff = pred_cf - target_cf
+                        loss_per_freq = diff.real**2 + diff.imag**2
+                        if low_mask.any():
+                            writer.add_scalar("debug/loss_low_omega", loss_per_freq[:, low_mask].mean().item(), global_step)
+                        if mid_mask.any():
+                            writer.add_scalar("debug/loss_mid_omega", loss_per_freq[:, mid_mask].mean().item(), global_step)
+                        if high_mask.any():
+                            writer.add_scalar("debug/loss_high_omega", loss_per_freq[:, high_mask].mean().item(), global_step)
+
+                        # CF magnitude by band (should decay at high ω for well-learned CFs)
+                        pred_mag = torch.abs(pred_cf)
+                        if low_mask.any():
+                            writer.add_scalar("debug/cf_mag_low", pred_mag[:, low_mask].mean().item(), global_step)
+                        if mid_mask.any():
+                            writer.add_scalar("debug/cf_mag_mid", pred_mag[:, mid_mask].mean().item(), global_step)
+                        if high_mask.any():
+                            writer.add_scalar("debug/cf_mag_high", pred_mag[:, high_mask].mean().item(), global_step)
+
+                        # Q-value spread across actions (key convergence signal)
+                        q_spread = (all_q_values.max(dim=1)[0] - all_q_values.min(dim=1)[0]).mean().item()
+                        writer.add_scalar("debug/q_spread_across_actions", q_spread, global_step)
+
+                        # Per-action Q-value means
+                        for a in range(min(all_q_values.shape[1], 6)):
+                            writer.add_scalar(f"debug/q_action_{a}", all_q_values[:, a].mean().item(), global_step)
+
+                        # Target CF statistics
+                        target_mag = torch.abs(target_cf)
+                        target_phase_at_collapse = torch.angle(target_cf[:, low_mask]).mean().item() if low_mask.any() else 0
+                        writer.add_scalar("debug/target_cf_mag_mean", target_mag.mean().item(), global_step)
+                        writer.add_scalar("debug/target_phase_low_omega", target_phase_at_collapse, global_step)
+
+                    # === Detailed print every 10K steps ===
                     if global_step % 10000 == 0:
-                        print(f"Step {global_step}: Q_mean={all_q_values.mean():.2f}, "
-                              f"Q_max={all_q_values.max():.2f}, loss={loss:.6f}, "
-                              f"grad={total_grad_norm:.4f}, collapse_phase={collapse_phase:.3f}rad, "
-                              f"SPS={int(global_step / (time.time() - start_time))}")
+                        with torch.no_grad():
+                            q_min_across = all_q_values.min(dim=1)[0].mean().item()
+                            q_max_across = all_q_values.max(dim=1)[0].mean().item()
+                            low_loss_val = loss_per_freq[:, low_mask].mean().item() if low_mask.any() else 0
+                            mid_loss_val = loss_per_freq[:, mid_mask].mean().item() if mid_mask.any() else 0
+                            high_loss_val = loss_per_freq[:, high_mask].mean().item() if high_mask.any() else 0
+                            low_mag_val = pred_mag[:, low_mask].mean().item() if low_mask.any() else 0
+                            mid_mag_val = pred_mag[:, mid_mask].mean().item() if mid_mask.any() else 0
+                            high_mag_val = pred_mag[:, high_mask].mean().item() if high_mask.any() else 0
+                            # Action selection diversity
+                            chosen = all_q_values.argmax(dim=1)
+                            acounts = torch.bincount(chosen, minlength=all_q_values.shape[1]).float()
+                            aprobs = acounts / acounts.sum()
+                            action_ent = -(aprobs * (aprobs + 1e-8).log()).sum().item()
+
+                        # Memory usage
+                        try:
+                            import psutil
+                            ram_gb = psutil.Process().memory_info().rss / 1e9
+                        except ImportError:
+                            ram_gb = -1
+                        gpu_mb = torch.cuda.memory_allocated() / 1e6 if torch.cuda.is_available() else 0
+
+                        print(f"\n{'='*70}")
+                        print(f"Step {global_step} / {args.total_timesteps}  (ep={episode_count})")
+                        print(f"{'='*70}")
+                        print(f"  Q-values:  mean={all_q_values.mean():.4f}  min={q_min_across:.4f}  max={q_max_across:.4f}  spread={q_spread:.5f}")
+                        print(f"  Per-action Q: {[f'{all_q_values[:, a].mean():.4f}' for a in range(min(all_q_values.shape[1], 6))]}")
+                        print(f"  Loss:  total={loss:.6f}  low_ω={low_loss_val:.6f}  mid_ω={mid_loss_val:.6f}  high_ω={high_loss_val:.6f}")
+                        print(f"  CF mag:  low={low_mag_val:.4f}  mid={mid_mag_val:.4f}  high={high_mag_val:.4f}")
+                        print(f"  Grad={total_grad_norm:.5f}  phase={collapse_phase:.4f}rad  ε={epsilon:.3f}")
+                        print(f"  Action entropy={action_ent:.3f}  (uniform={np.log(all_q_values.shape[1]):.3f})")
+                        print(f"  Memory: RAM={ram_gb:.1f}GB  GPU={gpu_mb:.0f}MB  Buffer={rb.size()}/{args.buffer_size}")
+                        print(f"  SPS={int(global_step / (time.time() - start_time))}")
+                        print(f"{'='*70}")
 
             # Target network update
             if global_step % args.target_network_frequency == 0:

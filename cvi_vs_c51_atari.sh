@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --array=0-11%12       # 12 independent tasks, each gets its own GPU (12 GPUs in parallel)
 #SBATCH --output=slurm/logs/%x_%A_%a.out
-#SBATCH --mem-per-cpu=4G      # 4 CPUs × 4G = 16G RAM per task (replay buffer ~7G + overhead)
+#SBATCH --mem-per-cpu=8G      # 4 CPUs × 8G = 32G RAM per task (replay buffer ~14G + overhead)
 #SBATCH --time=24:00:00
 
 ################################################################################
