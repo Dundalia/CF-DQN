@@ -537,7 +537,7 @@ class TestQNetwork:
         import gymnasium as gym
         import sys
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from cleanrl.cf_dqn import QNetwork, make_env
+        from cleanrl.cf_dqn_old import QNetwork, make_env
         
         # Create environment
         env_id = "CartPole-v1"
@@ -564,7 +564,7 @@ class TestQNetwork:
         import gymnasium as gym
         import sys
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from cleanrl.cf_dqn import QNetwork, make_env
+        from cleanrl.cf_dqn_old import QNetwork, make_env
         
         env_id = "CartPole-v1"
         envs = gym.vector.SyncVectorEnv([make_env(env_id, 1, 0, False, "test")])
@@ -593,7 +593,7 @@ class TestQNetwork:
         import gymnasium as gym
         import sys
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from cleanrl.cf_dqn import QNetwork, make_env
+        from cleanrl.cf_dqn_old import QNetwork, make_env
         
         env_id = "CartPole-v1"
         envs = gym.vector.SyncVectorEnv([make_env(env_id, 1, 0, False, "test")])
@@ -619,7 +619,7 @@ class TestQNetwork:
         import gymnasium as gym
         import sys
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from cleanrl.cf_dqn import QNetwork, make_env
+        from cleanrl.cf_dqn_old import QNetwork, make_env
         
         env_id = "CartPole-v1"
         envs = gym.vector.SyncVectorEnv([make_env(env_id, 1, 0, False, "test")])
