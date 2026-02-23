@@ -39,7 +39,7 @@ if [[ "$SWEEP_ID" == *"YOUR_ENTITY"* ]]; then
 fi
 
 # Create log directory if it doesn't exist
-mkdir -p slurm/logs
+mkdir -p slurm/logs/
 
 echo "=========================================="
 echo "CF-DQN Wandb Sweep Agent"

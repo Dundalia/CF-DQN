@@ -24,7 +24,7 @@ import tyro
 from torch.utils.tensorboard import SummaryWriter
 
 from cleanrl_utils.buffers import ReplayBuffer
-from cleanrl_utils.cf import (
+from cleanrl_utils.cf_old import (
     make_omega_grid,
     interpolate_cf_polar,
     collapse_cf_to_mean,

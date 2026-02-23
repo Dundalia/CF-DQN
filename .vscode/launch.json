@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "cvi_dqn CartPole-v1",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "cleanrl.cvi_dqn",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "args": [
+                "--env-id", "CartPole-v1",
+                "--total-timesteps", "500000",
+                "--learning-rate", "0.00025",
+                "--batch-size", "128",
+                "--target-network-frequency", "500",
+                "--K", "128",
+                "--w", "1.0",
+                "--w-collapse", "0.1",
+                "--track",
+                "--wandb-project-name", "Deep-CVI-Experiments"
+            ],
+            "justMyCode": true
+        }
+    ]
+}

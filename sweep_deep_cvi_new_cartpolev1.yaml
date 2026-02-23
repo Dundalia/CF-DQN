@@ -1,0 +1,42 @@
+program: cleanrl/cvi_dqn.py
+method: random
+name: Deep-CVI-Sensitivity-Study
+metric:
+  goal: maximize
+  # We use your milestone metric to evaluate the long-term stability of the run
+  name: charts/episodic_return_per_100_episodes
+
+parameters:
+  env-id:
+    value: "CartPole-v1"
+  total-timesteps:
+    value: 500000
+  track:
+    value: True
+  wandb-project-name:
+    value: "Deep-CVI-Experiments"
+
+  seed:
+    values: [42, 123, 999]
+
+  # --- CVI Hyperparameter Sweep ---
+  K:
+    values: [64, 128, 256]
+  w:
+    values: [1.0, 2.0, 5.0]
+  w-collapse:
+    values: [0.1, 0.5, 1.0]
+
+  # --- RL Stability Sweep ---
+  # Tweaking these might eliminate those performance dips you saw!
+  learning-rate:
+    values: [0.0001, 0.00025, 0.0005]
+  target-network-frequency:
+    values: [500, 1000, 2000]
+
+  # --- The Novel Methods (Placeholder) ---
+  # We will uncomment these once we add them to your argparse!
+  # collapse_method:
+  #   values: ["gaussian", "fft", "quadratic"]
+  # interpolation_method:
+  #   values: ["polar", "linear", "pchip"]

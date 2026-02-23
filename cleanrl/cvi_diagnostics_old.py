@@ -21,7 +21,7 @@ from matplotlib.gridspec import GridSpec
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from cleanrl_utils.cf import (
+from cleanrl_utils.cf_old import (
     make_omega_grid,
     interpolate_cf_polar,
     collapse_cf_to_mean,
