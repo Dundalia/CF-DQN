@@ -19,7 +19,7 @@
 ################################################################################
 
 # ===== EDIT THIS LINE WITH YOUR SWEEP ID =====
-SWEEP_ID="fatty_data/Deep-CVI-Experiments/ia71mubm"
+SWEEP_ID="${SWEEP_ID:-fatty_data/CF-DQN-cleanrl/ia71mubm}"
 # ==============================================
 
 # Create log directory if it doesn't exist
