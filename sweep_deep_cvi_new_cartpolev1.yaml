@@ -3,8 +3,7 @@ method: random
 name: Deep-CVI-Sensitivity-Study
 metric:
   goal: maximize
-  # We use your milestone metric to evaluate the long-term stability of the run
-  name: charts/episodic_return_per_100_episodes
+  name: charts/moving_avg_return
 
 parameters:
   env-id:
@@ -16,8 +15,6 @@ parameters:
   wandb-project-name:
     value: "Deep-CVI-Experiments"
 
-  seed:
-    values: [42, 123, 999]
 
   # --- CVI Hyperparameter Sweep ---
   K:
@@ -33,6 +30,10 @@ parameters:
     values: [0.0001, 0.00025, 0.0005]
   target-network-frequency:
     values: [500, 1000, 2000]
+  exploration-fraction:
+    values: [0.1, 0.3, 0.5]
+  end-e:
+    values: [0.00, 0.05, 0.1]
 
   # --- The Novel Methods (Placeholder) ---
   # We will uncomment these once we add them to your argparse!

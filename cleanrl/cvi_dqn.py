@@ -11,6 +11,9 @@ import torch.optim as optim
 import tyro
 from torch.utils.tensorboard import SummaryWriter
 
+from collections import deque
+import numpy as np
+
 from cleanrl_utils.buffers import ReplayBuffer
 
 from cleanrl.cvi_utils import create_three_density_grid, polar_interpolation, gaussian_collapse_q_values
@@ -66,9 +69,9 @@ class Args:
     """the batch size of sample from the reply memory"""
     start_e: float = 1
     """the starting epsilon for exploration"""
-    end_e: float = 0.05
+    end_e: float = 0.00
     """the ending epsilon for exploration"""
-    exploration_fraction: float = 0.5
+    exploration_fraction: float = 0.3
     """the fraction of `total-timesteps` it takes from start-e to go end-e"""
     learning_starts: int = 10000
     """timestep to start learning"""
@@ -172,6 +175,7 @@ if __name__ == "__main__":
     assert isinstance(envs.single_action_space, gym.spaces.Discrete), "only discrete action space is supported"
     
     #! Init CF-Q-Network and Grid
+    recent_returns = deque(maxlen=500)
     omega_grid = create_three_density_grid(K=args.K, W=args.w, device=device)
     actual_grid_size = len(omega_grid)
 
@@ -220,6 +224,8 @@ if __name__ == "__main__":
                     print(f"global_step={global_step}, episode={episode_count}, episodic_return={episode_return}, episodic_length={episode_length}")
                     writer.add_scalar("charts/episodic_return", episode_return, global_step)
                     writer.add_scalar("charts/episodic_length", episode_length, global_step)
+                    recent_returns.append(episode_return)
+                    writer.add_scalar("charts/moving_avg_return", np.mean(recent_returns), global_step)
                     
                     # Log return by episode count for fair comparison across algorithms
                     writer.add_scalar("charts/episodic_return_by_episode", episode_return, episode_count)
@@ -282,7 +288,6 @@ if __name__ == "__main__":
                     current_Q_all = gaussian_collapse_q_values(omega_grid, current_V_complex_all, args.w_collapse)
                     current_Q_taken = current_Q_all[batch_idx, data.actions.flatten()]
                     writer.add_scalar("losses/q_values", current_Q_taken.mean().item(), global_step)
-                    print("SPS:", int(global_step / (time.time() - start_time)))
                     writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 
                 optimizer.zero_grad()
@@ -293,45 +298,6 @@ if __name__ == "__main__":
             if global_step % args.target_network_frequency == 0:
                 target_network.load_state_dict(q_network.state_dict())
                 
-        #* C51 logic for reference
-        # if global_step > args.learning_starts:
-        #     if global_step % args.train_frequency == 0:
-        #         data = rb.sample(args.batch_size)
-        #         with torch.no_grad():
-        #             _, next_pmfs = target_network.get_action(data.next_observations)
-        #             next_atoms = data.rewards + args.gamma * target_network.atoms * (1 - data.dones)
-        #             # projection
-        #             delta_z = target_network.atoms[1] - target_network.atoms[0]
-        #             tz = next_atoms.clamp(args.v_min, args.v_max)
-
-        #             b = (tz - args.v_min) / delta_z
-        #             l = b.floor().clamp(0, args.n_atoms - 1)
-        #             u = b.ceil().clamp(0, args.n_atoms - 1)
-        #             # (l == u).float() handles the case where bj is exactly an integer
-        #             # example bj = 1, then the upper ceiling should be uj= 2, and lj= 1
-        #             d_m_l = (u + (l == u).float() - b) * next_pmfs
-        #             d_m_u = (b - l) * next_pmfs
-        #             target_pmfs = torch.zeros_like(next_pmfs)
-        #             for i in range(target_pmfs.size(0)):
-        #                 target_pmfs[i].index_add_(0, l[i].long(), d_m_l[i])
-        #                 target_pmfs[i].index_add_(0, u[i].long(), d_m_u[i])
-
-        #         _, old_pmfs = q_network.get_action(data.observations, data.actions.flatten())
-        #         loss = (-(target_pmfs * old_pmfs.clamp(min=1e-5, max=1 - 1e-5).log()).sum(-1)).mean()
-
-        #         if global_step % 100 == 0:
-        #             writer.add_scalar("losses/loss", loss.item(), global_step)
-        #             old_val = (old_pmfs * q_network.atoms).sum(1)
-        #             writer.add_scalar("losses/q_values", old_val.mean().item(), global_step)
-        #             print("SPS:", int(global_step / (time.time() - start_time)))
-        #             writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
-
-        #         # optimize the model
-        #         optimizer.zero_grad()
-        #         loss.backward()
-        #         optimizer.step()
-
-
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
         model_data = {
