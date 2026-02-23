@@ -19,7 +19,7 @@
 ################################################################################
 
 # ===== EDIT THIS LINE WITH YOUR SWEEP ID =====
-SWEEP_ID="fatty_data/Deep-CVI-Experiments/xytorgvw"
+SWEEP_ID="fatty_data/Deep-CVI-Experiments/ia71mubm"
 # ==============================================
 
 # Create log directory if it doesn't exist
