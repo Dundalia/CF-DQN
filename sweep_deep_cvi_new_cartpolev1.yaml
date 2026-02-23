@@ -5,13 +5,18 @@ metric:
   goal: maximize
   name: charts/moving_avg_return
 
+command:
+  - ${env}
+  - python
+  - ${program}
+  - --track #! CANNOT HAVE track True in parameters, must be set here
+  - ${args}
+
 parameters:
   env-id:
     value: "CartPole-v1"
   total-timesteps:
     value: 500000
-  track:
-    value: True
   wandb-project-name:
     value: "Deep-CVI-Experiments"
 
@@ -41,3 +46,4 @@ parameters:
   #   values: ["gaussian", "fft", "quadratic"]
   # interpolation_method:
   #   values: ["polar", "linear", "pchip"]
+

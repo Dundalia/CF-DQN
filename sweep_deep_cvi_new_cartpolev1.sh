@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-gpu=4
 #SBATCH --ntasks=1
 #SBATCH --array=0-99%20          # Run 100 total experiments, max 20 at a time
-#SBATCH --output=slurm/logs/new-cvi-sweep-cartpolev1/sweep_%A_%a.out
+#SBATCH --output=slurm/logs/new-cvi-sweep-cartpole/sweep_%A_%a.out
 #SBATCH --mem-per-cpu=12G
 #SBATCH --time=6:00:00           # Lowered to 4 hrs since CartPole runs very fast
 
@@ -23,7 +23,7 @@ SWEEP_ID="${SWEEP_ID:-fatty_data/CF-DQN-cleanrl/ia71mubm}"
 # ==============================================
 
 # Create log directory if it doesn't exist
-mkdir -p slurm/logs/new-cvi-sweep-cartpolev1/
+mkdir -p slurm/logs/new-cvi-sweep-cartpole/
 
 echo "=========================================="
 echo "CVI-DQN Wandb Sweep Agent"
