@@ -1,7 +1,6 @@
 import os
 import random
 import time
-import math
 from dataclasses import dataclass
 
 import gymnasium as gym
@@ -17,7 +16,7 @@ import numpy as np
 
 from cleanrl_utils.buffers import ReplayBuffer
 
-from cleanrl.cvi_utils import create_three_density_grid, polar_interpolation, gaussian_collapse_q_values, unwrap_phase
+from cleanrl.cvi_utils import create_three_density_grid, polar_interpolation, gaussian_collapse_q_values
 
 
 @dataclass
@@ -58,12 +57,9 @@ class Args:
     """the number of frequency grid points"""
     w: float = 5.0
     """the frequency range [-W, W] for the grid construction during training"""
-    w_collapse: float = 2.0
-    """the maximum frequency range [-W, W] for the collapse when selecting the greedy action"""
-    w_collapse_min: float = 0.002
-    """floor for adaptive w_collapse; ensures at least ~5 grid points on each side of zero"""
-    q_ema_alpha: float = 0.005
-    """EMA decay for tracking |Q| magnitude used to adapt w_collapse adaptively"""
+    n_collapse_pairs: int = 5
+    """number of innermost symmetric frequency pairs used to collapse CF → Q-value;
+    safe up to Q ~ π / (2·ω_N) where ω_N is the N-th positive grid point (~0.006 for K=256,W=1)"""
     buffer_size: int = 10000
     """the replay memory buffer size"""
     gamma: float = 0.99
@@ -201,11 +197,6 @@ if __name__ == "__main__":
     )
     start_time = time.time()
     episode_count = 0  # Track total number of completed episodes
-    # Adaptive collapse window: w_collapse_adaptive shrinks as |Q| grows to maintain the
-    # phase budget  Q * w_collapse < π/4,  preventing unwrap_phase ambiguity.
-    # It is upper-bounded by args.w_collapse and lower-bounded by args.w_collapse_min.
-    w_collapse_adaptive: float = args.w_collapse  # starts at the configured maximum
-    q_ema: float = 1.0                        # running EMA of |Q_target| for adaptation
 
     # TRY NOT TO MODIFY: start the game
     obs, _ = envs.reset(seed=args.seed)
@@ -218,7 +209,7 @@ if __name__ == "__main__":
             #! CVI action selection
             with torch.no_grad():
                 V_complex_all = q_network(torch.Tensor(obs).to(device))
-                q_values = gaussian_collapse_q_values(omega_grid, V_complex_all, w_collapse_adaptive)
+                q_values = gaussian_collapse_q_values(omega_grid, V_complex_all, args.n_collapse_pairs)
                 actions = torch.argmax(q_values, dim=1).cpu().numpy()
             #* C51 action selection for reference
             # actions, pmf = q_network.get_action(torch.Tensor(obs).to(device))
@@ -271,7 +262,7 @@ if __name__ == "__main__":
                     #    target network EVALUATES it. Decouples selection from evaluation,
                     #    breaking the positive feedback loop that causes Q overestimation.
                     online_V_next_all = q_network(data.next_observations)
-                    online_Q_next = gaussian_collapse_q_values(omega_grid, online_V_next_all, w_collapse_adaptive)
+                    online_Q_next = gaussian_collapse_q_values(omega_grid, online_V_next_all, args.n_collapse_pairs)
                     next_actions = torch.argmax(online_Q_next, dim=1)  # selected by online network
                     
                     # 3. Select the CF of the greedy action (evaluated by target network)
@@ -301,7 +292,7 @@ if __name__ == "__main__":
 
                 if global_step % 100 == 0:
                     writer.add_scalar("losses/loss", loss.item(), global_step)
-                    current_Q_all = gaussian_collapse_q_values(omega_grid, current_V_complex_all, w_collapse_adaptive)
+                    current_Q_all = gaussian_collapse_q_values(omega_grid, current_V_complex_all, args.n_collapse_pairs)
                     current_Q_taken = current_Q_all[batch_idx, data.actions.flatten()]
                     writer.add_scalar("losses/q_values", current_Q_taken.mean().item(), global_step)
                     writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
@@ -313,21 +304,11 @@ if __name__ == "__main__":
                     # Diagnostics: target network Q values + online vs target divergence
                     with torch.no_grad():
                         target_V_diag = target_network(data.observations)
-                        target_Q_diag = gaussian_collapse_q_values(omega_grid, target_V_diag, w_collapse_adaptive)
+                        target_Q_diag = gaussian_collapse_q_values(omega_grid, target_V_diag, args.n_collapse_pairs)
                         target_Q_taken_diag = target_Q_diag[batch_idx, data.actions.flatten()]
                         writer.add_scalar("diagnostics/target_q_values", target_Q_taken_diag.mean().item(), global_step)
                         online_target_diff = (current_Q_all - target_Q_diag).abs().mean()
                         writer.add_scalar("diagnostics/q_online_target_diff", online_target_diff.item(), global_step)
-                    # Adaptive collapse window update: shrink w_collapse_adaptive as |Q| grows
-                    # Target: Q * w_collapse_adaptive < π/4  (safely below the π ambiguity cliff)
-                    q_ema = (1 - args.q_ema_alpha) * q_ema + args.q_ema_alpha * abs(target_Q_taken_diag.mean().item())
-                    w_collapse_adaptive = float(np.clip(
-                        math.pi / 4.0 / (q_ema + 1e-6),
-                        args.w_collapse_min,
-                        args.w_collapse,
-                    ))
-                    writer.add_scalar("diagnostics/w_collapse_adaptive", w_collapse_adaptive, global_step)
-                    writer.add_scalar("diagnostics/q_ema", q_ema, global_step)
                     # Diagnostics: CF normalization health (collapse indicator)
                     #   cf_mag_scale: mean raw magnitude at omega=0 BEFORE normalization.
                     #   If this shrinks toward 0, the 1e-8 guard dominates → degenerate normalization.
@@ -340,35 +321,25 @@ if __name__ == "__main__":
                         phase_at_zero_diag = torch.angle(raw_complex[..., zero_idx_diag]).abs().mean()
                         writer.add_scalar("diagnostics/cf_mag_scale", mag_at_zero_diag.item(), global_step)
                         writer.add_scalar("diagnostics/cf_phase_at_zero", phase_at_zero_diag.item(), global_step)
-                    # Diagnostics: OLS phase linearity health
-                    #   ols_r2_mean/min: R² of the linear phase fit inside the collapse window.
-                    #   R²~1.0 means phase is genuinely linear -> OLS Q-estimate is trustworthy.
-                    #   R² dropping toward 0 or going negative means the CF phase is non-linear
-                    #   inside |ω|<=w_collapse, and gaussian_collapse is producing garbage Q-values.
-                    #   cf_phase_inner_max_diff: largest consecutive phase step inside the collapse
-                    #   window after unwrapping. If > π, unwrap_phase failed inside the window,
-                    #   introducing a ±2π cumulative error in the OLS estimate.
+                    # Diagnostics: symmetric FD collapse health
+                    #   q_slope_spread: std of per-pair Q estimates across the N pairs.
+                    #     A low value means all pairs agree → collapse is reliable.
+                    #     A growing value means higher-frequency pairs are deviating (Q too large).
+                    #   cf_phase_max_pair: raw |phase| at the outermost pair (+ω_N).
+                    #     If this approaches π, the phase is at risk of wrapping → increase K or
+                    #     decrease n_collapse_pairs.
                     with torch.no_grad():
-                        low_freq_mask = torch.abs(omega_grid) <= w_collapse_adaptive
-                        w_low_diag = omega_grid[low_freq_mask]  # (M,)
-                        # Per (batch, action) phase in the collapse window
-                        phase_all_diag = torch.angle(current_V_complex_all)  # (B, A, K)
-                        unwrapped_all_diag = unwrap_phase(phase_all_diag, dim=-1)  # (B, A, K)
-                        phase_low_diag = unwrapped_all_diag[..., low_freq_mask]  # (B, A, M)
-                        # OLS slope: q = Σ(ω*φ) / Σ(ω²)
-                        denom_diag = torch.sum(w_low_diag ** 2) + 1e-8
-                        q_ols_diag = torch.sum(w_low_diag * phase_low_diag, dim=-1) / denom_diag  # (B, A)
-                        # Predicted phase vs actual: R² = 1 - SS_res / SS_tot
-                        pred_phase_diag = q_ols_diag.unsqueeze(-1) * w_low_diag  # (B, A, M)
-                        ss_res_diag = torch.sum((phase_low_diag - pred_phase_diag) ** 2, dim=-1)  # (B, A)
-                        ss_tot_diag = torch.sum(phase_low_diag ** 2, dim=-1)  # (B, A)
-                        r2_diag = 1.0 - ss_res_diag / (ss_tot_diag + 1e-8)  # (B, A)
-                        writer.add_scalar("diagnostics/ols_r2_mean", r2_diag.mean().item(), global_step)
-                        writer.add_scalar("diagnostics/ols_r2_min", r2_diag.min().item(), global_step)
-                        # Max consecutive unwrapped-phase step inside the collapse window
-                        # A value > π means a 2π wrap was missed, corrupting OLS.
-                        inner_diffs_diag = torch.diff(phase_low_diag, dim=-1).abs()  # (B, A, M-1)
-                        writer.add_scalar("diagnostics/cf_phase_inner_max_diff", inner_diffs_diag.max().item(), global_step)
+                        zero_idx_diag = len(omega_grid) // 2
+                        k_diag = torch.arange(1, args.n_collapse_pairs + 1, device=device)
+                        pos_idx_diag = zero_idx_diag + k_diag
+                        neg_idx_diag = zero_idx_diag - k_diag
+                        omega_pos_diag = omega_grid[pos_idx_diag]            # (N,)
+                        phase_all_diag = torch.angle(current_V_complex_all)  # (B, A, K+1)
+                        phase_pos_diag = phase_all_diag[..., pos_idx_diag]   # (B, A, N)
+                        phase_neg_diag = phase_all_diag[..., neg_idx_diag]   # (B, A, N)
+                        slopes_diag = (phase_pos_diag - phase_neg_diag) / (2.0 * omega_pos_diag)  # (B, A, N)
+                        writer.add_scalar("diagnostics/q_slope_spread", slopes_diag.std(dim=-1).mean().item(), global_step)
+                        writer.add_scalar("diagnostics/cf_phase_max_pair", phase_pos_diag[..., -1].abs().max().item(), global_step)
 
                 optimizer.zero_grad()
                 loss.backward()

@@ -15,13 +15,13 @@
                 // "--target-network-frequency", "2000",
                 "--K", "256",
                 "--w", "1.0",
-                "--w-collapse", "0.01",
                 "--track",
                 "--wandb-project-name", "Deep-CVI-Experiments",
                 "--end-e", "0.0",
-                "--seed", "2",
+                "--seed", "3",
                 "--exploration-fraction", "0.3",
-                "--buffer-size", "10000",
+                "--buffer-size", "10000", 
+                "--n-collapse-pairs", "5"
 
             ],
             "justMyCode": true
