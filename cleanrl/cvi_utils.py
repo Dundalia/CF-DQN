@@ -99,39 +99,44 @@ def polar_interpolation(omega_grid, target_V_complex, gammas):
     # Returns the interpolated CF values at the scaled frequencies
     return interp_mag * torch.complex(torch.cos(interp_phase), torch.sin(interp_phase))
 
-def gaussian_collapse_q_values(omega_grid, V_complex, n_pairs=5):
+def gaussian_collapse_q_values(omega_grid, V_complex, n_pairs=5, start_pair=3, q_value_clip=None):
     """
     Extracts Q-values from the CF via symmetric finite differences at ω→0.
 
-    Uses the N innermost symmetric frequency pairs (±ω₁, …, ±ω_N) to estimate
+    Uses N symmetric frequency pairs starting at start_pair to estimate
     the phase slope dφ/dω|_{ω=0} = Q via:
 
         Q_k = (φ(+ω_k) − φ(−ω_k)) / (2ω_k)
 
     The phase of a true CF is an odd function (φ(−ω) = −φ(ω)), so all
-    even-order Taylor terms cancel exactly.  The error per pair is O(ω_k²),
-    which is ~4×10⁻⁵ for the 5th innermost point (ω_5 ≈ 0.006).
+    even-order Taylor terms cancel exactly.
 
-    Advantages over OLS:
-      - No phase unwrapping needed: raw angle() values at tiny ω are always ≪ π
-      - No window-size hyperparameter; safe up to Q ~ π / (2·ω_N)
-      - Symmetric cancellation removes even-order nonlinearities
-      - Deterministic behaviour regardless of Q scale or random seed
+    CRITICAL: skip the first few pairs (start_pair ≥ 2) because ω₁ = 1e-5
+    on a three-density grid.  Dividing by 2×1e-5 = 2e-5 amplifies even tiny
+    random-init phase noise into Q estimates in the thousands, causing
+    catastrophic Q bootstrap explosion.  With start_pair=3, the smallest ω
+    used is ω₃ ≈ 0.003 (for K=256, W=1.0), safe down to phase errors of ~0.3 rad.
 
     Args:
-        omega_grid: 1D Tensor of shape (K+1,), perfectly symmetric around
-                    index K//2 where ω=0.
-        V_complex:  Complex Tensor of shape (…, K+1)
-        n_pairs:    Number of innermost symmetric pairs to average (default 5).
-                    With K=256 and W=1.0 this is safe up to Q ≈ 494.
+        omega_grid:    1D Tensor of shape (K+1,), symmetric around index K//2.
+        V_complex:     Complex Tensor of shape (…, K+1).
+        n_pairs:       Number of pairs to average (default 5).
+        start_pair:    First pair index to use (default 3, skips dangerously
+                       small ω₁, ω₂ where noise amplification is severe).
+                       Pairs start_pair … start_pair+n_pairs-1 are used.
+                       With K=256, W=1.0, start_pair=3, n_pairs=5:
+                         ω range ≈ [0.003, 0.010] → safe to Q ≈ 160.
+        q_value_clip:  If not None, clip per-pair slope to ±q_value_clip
+                       before averaging. Prevents bootstrap explosion when
+                       the network is not yet well-calibrated (default None).
 
     Returns:
         Q-values of shape (…)
     """
     zero_idx = len(omega_grid) // 2          # index of ω=0
-    k = torch.arange(1, n_pairs + 1, device=omega_grid.device)
-    pos_idx = zero_idx + k                   # +ω_1 … +ω_N
-    neg_idx = zero_idx - k                   # −ω_1 … −ω_N  (= −ω_k by grid symmetry)
+    k = torch.arange(start_pair, start_pair + n_pairs, device=omega_grid.device)
+    pos_idx = zero_idx + k                   # +ω_{start} … +ω_{start+N-1}
+    neg_idx = zero_idx - k                   # −ω_{start} … −ω_{start+N-1}
 
     omega_pos = omega_grid[pos_idx]          # (n_pairs,)  all positive
     phase = torch.angle(V_complex)           # (…, K+1)
@@ -141,6 +146,9 @@ def gaussian_collapse_q_values(omega_grid, V_complex, n_pairs=5):
 
     # Per-pair slope: Q_k = (φ(+ω_k) − φ(−ω_k)) / (2ω_k)
     slopes = (phase_pos - phase_neg) / (2.0 * omega_pos)   # (…, n_pairs)
+
+    if q_value_clip is not None:
+        slopes = slopes.clamp(-q_value_clip, q_value_clip)
 
     return slopes.mean(dim=-1)               # (…,)
 

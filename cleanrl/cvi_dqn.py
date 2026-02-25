@@ -58,8 +58,14 @@ class Args:
     w: float = 5.0
     """the frequency range [-W, W] for the grid construction during training"""
     n_collapse_pairs: int = 5
-    """number of innermost symmetric frequency pairs used to collapse CF → Q-value;
-    safe up to Q ~ π / (2·ω_N) where ω_N is the N-th positive grid point (~0.006 for K=256,W=1)"""
+    """number of symmetric frequency pairs used to collapse CF → Q-value"""
+    collapse_start_pair: int = 3
+    """first pair index for symmetric FD collapse (skip pairs 1-2 whose ω≈1e-5 amplifies noise
+    by 50000×, causing Q bootstrap explosion); with K=256, W=1.0 and start_pair=3 the ω range
+    is [0.003, 0.010], safe to Q ≈ 160 — well above CartPole's optimal Q ≈ 100"""
+    q_value_clip: float = 500.0
+    """clip per-pair Q slope estimates to ±q_value_clip before averaging; safety net against
+    transient phase wrapping; for CartPole set to ~5× optimal Q (≈100) = 500"""
     buffer_size: int = 10000
     """the replay memory buffer size"""
     gamma: float = 0.99
@@ -209,7 +215,7 @@ if __name__ == "__main__":
             #! CVI action selection
             with torch.no_grad():
                 V_complex_all = q_network(torch.Tensor(obs).to(device))
-                q_values = gaussian_collapse_q_values(omega_grid, V_complex_all, args.n_collapse_pairs)
+                q_values = gaussian_collapse_q_values(omega_grid, V_complex_all, args.n_collapse_pairs, args.collapse_start_pair, args.q_value_clip)
                 actions = torch.argmax(q_values, dim=1).cpu().numpy()
             #* C51 action selection for reference
             # actions, pmf = q_network.get_action(torch.Tensor(obs).to(device))
@@ -262,7 +268,7 @@ if __name__ == "__main__":
                     #    target network EVALUATES it. Decouples selection from evaluation,
                     #    breaking the positive feedback loop that causes Q overestimation.
                     online_V_next_all = q_network(data.next_observations)
-                    online_Q_next = gaussian_collapse_q_values(omega_grid, online_V_next_all, args.n_collapse_pairs)
+                    online_Q_next = gaussian_collapse_q_values(omega_grid, online_V_next_all, args.n_collapse_pairs, args.collapse_start_pair, args.q_value_clip)
                     next_actions = torch.argmax(online_Q_next, dim=1)  # selected by online network
                     
                     # 3. Select the CF of the greedy action (evaluated by target network)
@@ -292,7 +298,7 @@ if __name__ == "__main__":
 
                 if global_step % 100 == 0:
                     writer.add_scalar("losses/loss", loss.item(), global_step)
-                    current_Q_all = gaussian_collapse_q_values(omega_grid, current_V_complex_all, args.n_collapse_pairs)
+                    current_Q_all = gaussian_collapse_q_values(omega_grid, current_V_complex_all, args.n_collapse_pairs, args.collapse_start_pair, args.q_value_clip)
                     current_Q_taken = current_Q_all[batch_idx, data.actions.flatten()]
                     writer.add_scalar("losses/q_values", current_Q_taken.mean().item(), global_step)
                     writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
@@ -304,7 +310,7 @@ if __name__ == "__main__":
                     # Diagnostics: target network Q values + online vs target divergence
                     with torch.no_grad():
                         target_V_diag = target_network(data.observations)
-                        target_Q_diag = gaussian_collapse_q_values(omega_grid, target_V_diag, args.n_collapse_pairs)
+                        target_Q_diag = gaussian_collapse_q_values(omega_grid, target_V_diag, args.n_collapse_pairs, args.collapse_start_pair, args.q_value_clip)
                         target_Q_taken_diag = target_Q_diag[batch_idx, data.actions.flatten()]
                         writer.add_scalar("diagnostics/target_q_values", target_Q_taken_diag.mean().item(), global_step)
                         online_target_diff = (current_Q_all - target_Q_diag).abs().mean()
@@ -330,7 +336,7 @@ if __name__ == "__main__":
                     #     decrease n_collapse_pairs.
                     with torch.no_grad():
                         zero_idx_diag = len(omega_grid) // 2
-                        k_diag = torch.arange(1, args.n_collapse_pairs + 1, device=device)
+                        k_diag = torch.arange(args.collapse_start_pair, args.collapse_start_pair + args.n_collapse_pairs, device=device)
                         pos_idx_diag = zero_idx_diag + k_diag
                         neg_idx_diag = zero_idx_diag - k_diag
                         omega_pos_diag = omega_grid[pos_idx_diag]            # (N,)
