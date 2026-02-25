@@ -17,7 +17,8 @@
                 "--w", "1.0",
                 "--w-collapse", "0.1",
                 "--track",
-                "--wandb-project-name", "Deep-CVI-Experiments"
+                "--wandb-project-name", "Deep-CVI-Experiments",
+                "--end-e", "0.01"
             ],
             "justMyCode": true
         }
