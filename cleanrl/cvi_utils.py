@@ -28,7 +28,11 @@ def create_three_density_grid(K: int, W: float, device="cpu"):
     mid_bound = 0.5 * W 
     
     # Generate the positive half of the grid
-    inner = torch.linspace(1e-5, inner_bound, n_inner, device=device)
+    # NOTE: start at 1e-3, NOT 1e-5.  The tiny 1e-5 lower bound means ω₁ = 1e-5,
+    # which causes the FD estimator to divide by 2e-5 — amplifying random-init
+    # phase noise of ~0.06 rad into Q ≈ 3000.  With ω_min = 1e-3, pair 1 is
+    # safe for any Q up to π/(2×1e-3) ≈ 1570.
+    inner = torch.linspace(1e-3, inner_bound, n_inner, device=device)
     mid = torch.linspace(inner_bound + 1e-4, mid_bound, n_mid, device=device)
     tail = torch.linspace(mid_bound + 1e-4, W, n_tail, device=device)
     
@@ -99,44 +103,35 @@ def polar_interpolation(omega_grid, target_V_complex, gammas):
     # Returns the interpolated CF values at the scaled frequencies
     return interp_mag * torch.complex(torch.cos(interp_phase), torch.sin(interp_phase))
 
-def gaussian_collapse_q_values(omega_grid, V_complex, n_pairs=5, start_pair=3, q_value_clip=None):
+def gaussian_collapse_q_values(omega_grid, V_complex, n_pairs=5):
     """
     Extracts Q-values from the CF via symmetric finite differences at ω→0.
 
-    Uses N symmetric frequency pairs starting at start_pair to estimate
+    Uses the N innermost symmetric frequency pairs (±ω₁, …, ±ω_N) to estimate
     the phase slope dφ/dω|_{ω=0} = Q via:
 
         Q_k = (φ(+ω_k) − φ(−ω_k)) / (2ω_k)
 
     The phase of a true CF is an odd function (φ(−ω) = −φ(ω)), so all
-    even-order Taylor terms cancel exactly.
+    even-order Taylor terms cancel exactly.  The error per pair is O(ω_k²).
 
-    CRITICAL: skip the first few pairs (start_pair ≥ 2) because ω₁ = 1e-5
-    on a three-density grid.  Dividing by 2×1e-5 = 2e-5 amplifies even tiny
-    random-init phase noise into Q estimates in the thousands, causing
-    catastrophic Q bootstrap explosion.  With start_pair=3, the smallest ω
-    used is ω₃ ≈ 0.003 (for K=256, W=1.0), safe down to phase errors of ~0.3 rad.
+    Requires the grid to start at a sane minimum (ω_min ≥ 1e-3) so that
+    dividing by 2·ω_min does not amplify random-init phase noise.  With
+    create_three_density_grid(K=256, W=1.0) the innermost point is
+    ω₁ ≈ 1e-3 → safe to Q ≈ π/(2·1e-3) ≈ 1570.
 
     Args:
-        omega_grid:    1D Tensor of shape (K+1,), symmetric around index K//2.
-        V_complex:     Complex Tensor of shape (…, K+1).
-        n_pairs:       Number of pairs to average (default 5).
-        start_pair:    First pair index to use (default 3, skips dangerously
-                       small ω₁, ω₂ where noise amplification is severe).
-                       Pairs start_pair … start_pair+n_pairs-1 are used.
-                       With K=256, W=1.0, start_pair=3, n_pairs=5:
-                         ω range ≈ [0.003, 0.010] → safe to Q ≈ 160.
-        q_value_clip:  If not None, clip per-pair slope to ±q_value_clip
-                       before averaging. Prevents bootstrap explosion when
-                       the network is not yet well-calibrated (default None).
+        omega_grid: 1D Tensor of shape (K+1,), symmetric around index K//2.
+        V_complex:  Complex Tensor of shape (…, K+1).
+        n_pairs:    Number of innermost pairs to average (default 5).
 
     Returns:
         Q-values of shape (…)
     """
     zero_idx = len(omega_grid) // 2          # index of ω=0
-    k = torch.arange(start_pair, start_pair + n_pairs, device=omega_grid.device)
-    pos_idx = zero_idx + k                   # +ω_{start} … +ω_{start+N-1}
-    neg_idx = zero_idx - k                   # −ω_{start} … −ω_{start+N-1}
+    k = torch.arange(1, n_pairs + 1, device=omega_grid.device)
+    pos_idx = zero_idx + k                   # +ω_1 … +ω_N
+    neg_idx = zero_idx - k                   # −ω_1 … −ω_N
 
     omega_pos = omega_grid[pos_idx]          # (n_pairs,)  all positive
     phase = torch.angle(V_complex)           # (…, K+1)
@@ -146,9 +141,6 @@ def gaussian_collapse_q_values(omega_grid, V_complex, n_pairs=5, start_pair=3, q
 
     # Per-pair slope: Q_k = (φ(+ω_k) − φ(−ω_k)) / (2ω_k)
     slopes = (phase_pos - phase_neg) / (2.0 * omega_pos)   # (…, n_pairs)
-
-    if q_value_clip is not None:
-        slopes = slopes.clamp(-q_value_clip, q_value_clip)
 
     return slopes.mean(dim=-1)               # (…,)
 
