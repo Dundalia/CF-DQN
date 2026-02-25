@@ -16,7 +16,7 @@ import numpy as np
 
 from cleanrl_utils.buffers import ReplayBuffer
 
-from cleanrl.cvi_utils import create_three_density_grid, polar_interpolation, gaussian_collapse_q_values
+from cleanrl.cvi_utils import create_three_density_grid, polar_interpolation, gaussian_collapse_q_values, unwrap_phase
 
 
 @dataclass
@@ -63,8 +63,10 @@ class Args:
     """the replay memory buffer size"""
     gamma: float = 0.99
     """the discount factor gamma"""
-    tau: float = 0.005
-    """the soft update coefficient for Polyak target network updates"""
+    # tau: float = 0.005
+    # """the soft update coefficient for Polyak target network updates"""
+    target_network_frequency: int = 2000
+    """the frequency at which the target network is updated (hard copy)"""
     batch_size: int = 128
     """the batch size of sample from the reply memory"""
     start_e: float = 1
@@ -79,6 +81,8 @@ class Args:
     """the frequency of training"""
     max_grad_norm: float = 10.0
     """the maximum gradient norm for clipping"""
+    phase_lin_reg_weight: float = 0.01
+    """weight for the phase-linearity regularization loss inside the collapse window"""
 
 
 def make_env(env_id, seed, idx, capture_video, run_name):
@@ -179,6 +183,11 @@ if __name__ == "__main__":
     recent_returns = deque(maxlen=500)
     omega_grid = create_three_density_grid(K=args.K, W=args.w, device=device)
     actual_grid_size = len(omega_grid)
+    # Precompute collapse-window mask and delta-omegas for the phase-linearity regularizer.
+    # These are constant throughout training.
+    low_freq_mask = torch.abs(omega_grid) <= args.w_collapse  # (K_actual,)
+    w_low = omega_grid[low_freq_mask]                          # (M,)
+    delta_omega = w_low[1:] - w_low[:-1]                      # (M-1,) grid spacings inside window
 
     q_network = CF_QNetwork(envs, actual_grid_size=actual_grid_size).to(device)
     optimizer = optim.Adam(q_network.parameters(), lr=args.learning_rate, eps=0.01 / args.batch_size)
@@ -282,28 +291,98 @@ if __name__ == "__main__":
                 current_V = current_V_complex_all[batch_idx, data.actions.flatten()]
                 
                 # Compute Complex MSE Loss in Frequency Domain
-                loss = torch.mean(torch.abs(current_V - y_target) ** 2)
+                cf_loss = torch.mean(torch.abs(current_V - y_target) ** 2)
+
+                # Phase-linearity regularization loss.
+                # For a valid CF, phase(ω) = Q·ω → consecutive normalized phase increments
+                # (phase_step / Δω) should be constant across the collapse window.
+                # We penalize their variance so the network has a gradient signal to
+                # maintain the linearity that gaussian_collapse OLS assumes.
+                # Uses single-step phasor ratios: no unwrapping needed, fully differentiable.
+                V_unit = current_V_complex_all / (torch.abs(current_V_complex_all) + 1e-8)  # (B, A, K)
+                V_unit_low = V_unit[..., low_freq_mask]                                      # (B, A, M)
+                phasor_steps = V_unit_low[..., 1:] * V_unit_low[..., :-1].conj()            # (B, A, M-1)
+                phase_steps = torch.angle(phasor_steps)                                      # (B, A, M-1)
+                norm_slopes = phase_steps / (delta_omega + 1e-8)                             # (B, A, M-1)
+                mean_slope = norm_slopes.mean(dim=-1, keepdim=True)                          # (B, A, 1)
+                phase_lin_reg = ((norm_slopes - mean_slope) ** 2).mean()
+
+                loss = cf_loss + args.phase_lin_reg_weight * phase_lin_reg
 
                 if global_step % 100 == 0:
                     writer.add_scalar("losses/loss", loss.item(), global_step)
+                    writer.add_scalar("losses/cf_loss", cf_loss.item(), global_step)
+                    writer.add_scalar("losses/phase_lin_reg", phase_lin_reg.item(), global_step)
                     current_Q_all = gaussian_collapse_q_values(omega_grid, current_V_complex_all, args.w_collapse)
                     current_Q_taken = current_Q_all[batch_idx, data.actions.flatten()]
                     writer.add_scalar("losses/q_values", current_Q_taken.mean().item(), global_step)
                     writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
-                    # Diagnostics
+                    # Diagnostics: action gap + grad norm
                     q_gap = (current_Q_all.max(dim=1).values - current_Q_all.min(dim=1).values).mean()
                     writer.add_scalar("diagnostics/q_action_gap", q_gap.item(), global_step)
                     total_norm = sum(p.grad.data.norm(2).item() ** 2 for p in q_network.parameters() if p.grad is not None) ** 0.5
                     writer.add_scalar("diagnostics/grad_norm", total_norm, global_step)
+                    # Diagnostics: target network Q values + online vs target divergence
+                    with torch.no_grad():
+                        target_V_diag = target_network(data.observations)
+                        target_Q_diag = gaussian_collapse_q_values(omega_grid, target_V_diag, args.w_collapse)
+                        target_Q_taken_diag = target_Q_diag[batch_idx, data.actions.flatten()]
+                        writer.add_scalar("diagnostics/target_q_values", target_Q_taken_diag.mean().item(), global_step)
+                        online_target_diff = (current_Q_all - target_Q_diag).abs().mean()
+                        writer.add_scalar("diagnostics/q_online_target_diff", online_target_diff.item(), global_step)
+                    # Diagnostics: CF normalization health (collapse indicator)
+                    #   cf_mag_scale: mean raw magnitude at omega=0 BEFORE normalization.
+                    #   If this shrinks toward 0, the 1e-8 guard dominates → degenerate normalization.
+                    with torch.no_grad():
+                        raw_out = q_network.cf_head(q_network.network(data.observations))
+                        raw_out = raw_out.view(raw_out.shape[0], q_network.action_dim, q_network.K, 2)
+                        raw_complex = torch.complex(raw_out[..., 0], raw_out[..., 1])
+                        zero_idx_diag = q_network.K // 2
+                        mag_at_zero_diag = torch.abs(raw_complex[..., zero_idx_diag]).mean()
+                        phase_at_zero_diag = torch.angle(raw_complex[..., zero_idx_diag]).abs().mean()
+                        writer.add_scalar("diagnostics/cf_mag_scale", mag_at_zero_diag.item(), global_step)
+                        writer.add_scalar("diagnostics/cf_phase_at_zero", phase_at_zero_diag.item(), global_step)
+                    # Diagnostics: OLS phase linearity health
+                    #   ols_r2_mean/min: R² of the linear phase fit inside the collapse window.
+                    #   R²~1.0 means phase is genuinely linear -> OLS Q-estimate is trustworthy.
+                    #   R² dropping toward 0 or going negative means the CF phase is non-linear
+                    #   inside |ω|<=w_collapse, and gaussian_collapse is producing garbage Q-values.
+                    #   cf_phase_inner_max_diff: largest consecutive phase step inside the collapse
+                    #   window after unwrapping. If > π, unwrap_phase failed inside the window,
+                    #   introducing a ±2π cumulative error in the OLS estimate.
+                    with torch.no_grad():
+                        w_low_diag = w_low  # reuse precomputed mask/grid
+                        # Per (batch, action) phase in the collapse window
+                        phase_all_diag = torch.angle(current_V_complex_all)  # (B, A, K)
+                        unwrapped_all_diag = unwrap_phase(phase_all_diag, dim=-1)  # (B, A, K)
+                        phase_low_diag = unwrapped_all_diag[..., low_freq_mask]  # (B, A, M)
+                        # OLS slope: q = Σ(ω*φ) / Σ(ω²)
+                        denom_diag = torch.sum(w_low_diag ** 2) + 1e-8
+                        q_ols_diag = torch.sum(w_low_diag * phase_low_diag, dim=-1) / denom_diag  # (B, A)
+                        # Predicted phase vs actual: R² = 1 - SS_res / SS_tot
+                        pred_phase_diag = q_ols_diag.unsqueeze(-1) * w_low_diag  # (B, A, M)
+                        ss_res_diag = torch.sum((phase_low_diag - pred_phase_diag) ** 2, dim=-1)  # (B, A)
+                        ss_tot_diag = torch.sum(phase_low_diag ** 2, dim=-1)  # (B, A)
+                        r2_diag = 1.0 - ss_res_diag / (ss_tot_diag + 1e-8)  # (B, A)
+                        writer.add_scalar("diagnostics/ols_r2_mean", r2_diag.mean().item(), global_step)
+                        writer.add_scalar("diagnostics/ols_r2_min", r2_diag.min().item(), global_step)
+                        # Max consecutive unwrapped-phase step inside the collapse window
+                        # A value > π means a 2π wrap was missed, corrupting OLS.
+                        inner_diffs_diag = torch.diff(phase_low_diag, dim=-1).abs()  # (B, A, M-1)
+                        writer.add_scalar("diagnostics/cf_phase_inner_max_diff", inner_diffs_diag.max().item(), global_step)
 
                 optimizer.zero_grad()
                 loss.backward()
                 nn.utils.clip_grad_norm_(q_network.parameters(), args.max_grad_norm)
                 optimizer.step()
                 
-            # Soft Polyak target network update (every training step)
-            for target_param, param in zip(target_network.parameters(), q_network.parameters()):
-                target_param.data.copy_(args.tau * param.data + (1.0 - args.tau) * target_param.data)
+                # # Soft Polyak target network update (once per gradient step)
+                # for target_param, param in zip(target_network.parameters(), q_network.parameters()):
+                #     target_param.data.copy_(args.tau * param.data + (1.0 - args.tau) * target_param.data)
+
+            # Hard target network update
+            if global_step % args.target_network_frequency == 0:
+                target_network.load_state_dict(q_network.state_dict())
                 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
