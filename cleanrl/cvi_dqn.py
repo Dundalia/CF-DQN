@@ -68,10 +68,10 @@ class Args:
     """the replay memory buffer size"""
     gamma: float = 0.99
     """the discount factor gamma"""
-    # tau: float = 0.005
-    # """the soft update coefficient for Polyak target network updates"""
-    target_network_frequency: int = 2000
-    """the frequency at which the target network is updated (hard copy)"""
+    tau: float = 0.005
+    """the soft update coefficient for Polyak target network updates"""
+    # target_network_frequency: int = 2000
+    # """the frequency at which the target network is updated (hard copy)"""
     batch_size: int = 128
     """the batch size of sample from the reply memory"""
     start_e: float = 1
@@ -375,13 +375,13 @@ if __name__ == "__main__":
                 nn.utils.clip_grad_norm_(q_network.parameters(), args.max_grad_norm)
                 optimizer.step()
                 
-                # # Soft Polyak target network update (once per gradient step)
-                # for target_param, param in zip(target_network.parameters(), q_network.parameters()):
-                #     target_param.data.copy_(args.tau * param.data + (1.0 - args.tau) * target_param.data)
+                #! Soft Polyak target network update (once per gradient step)
+                for target_param, param in zip(target_network.parameters(), q_network.parameters()):
+                    target_param.data.copy_(args.tau * param.data + (1.0 - args.tau) * target_param.data)
 
-            # Hard target network update
-            if global_step % args.target_network_frequency == 0:
-                target_network.load_state_dict(q_network.state_dict())
+            #! Hard target network update
+            # if global_step % args.target_network_frequency == 0:
+            #     target_network.load_state_dict(q_network.state_dict())
                 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"

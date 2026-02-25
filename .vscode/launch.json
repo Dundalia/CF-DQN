@@ -12,7 +12,7 @@
                 "--total-timesteps", "500000",
                 "--learning-rate", "0.0005",
                 "--batch-size", "128",
-                "--target-network-frequency", "2000",
+                // "--target-network-frequency", "2000",
                 "--K", "256",
                 "--w", "1.0",
                 "--w-collapse", "0.01",
