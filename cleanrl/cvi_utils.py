@@ -28,11 +28,20 @@ def create_three_density_grid(K: int, W: float, device="cpu"):
     mid_bound = 0.5 * W 
     
     # Generate the positive half of the grid
-    # NOTE: start at 1e-3, NOT 1e-5.  The tiny 1e-5 lower bound means ω₁ = 1e-5,
-    # which causes the FD estimator to divide by 2e-5 — amplifying random-init
-    # phase noise of ~0.06 rad into Q ≈ 3000.  With ω_min = 1e-3, pair 1 is
-    # safe for any Q up to π/(2×1e-3) ≈ 1570.
-    inner = torch.linspace(1e-3, inner_bound, n_inner, device=device)
+    # ω_min must satisfy: ω_min < π / (2 × Q_max)
+    # where Q_max ≈ r_max / (1 − γ) for a given environment.
+    #
+    # We set ω_min = 1e-3 × W, scaling with the grid range so the ratio
+    # ω_min / W stays constant regardless of W.  This gives:
+    #   safe Q_max = π / (2 × 1e-3 × W)
+    #   W=1.0  → safe to Q ≈ 1570   (CartPole, LunarLander, Atari-clipped: Q* ≈ 100)
+    #   W=5.0  → safe to Q ≈ 314    (still covers all clipped-reward envs at γ=0.99)
+    #   W=0.1  → safe to Q ≈ 15700  (headroom for large-reward envs)
+    #
+    # The ONLY unsafe case is unclipped Atari (game-native scores, Q* up to ~80000).
+    # For that, reduce W or switch to reward clipping — both are standard practice.
+    omega_min = 1e-3 * W
+    inner = torch.linspace(omega_min, inner_bound, n_inner, device=device)
     mid = torch.linspace(inner_bound + 1e-4, mid_bound, n_mid, device=device)
     tail = torch.linspace(mid_bound + 1e-4, W, n_tail, device=device)
     

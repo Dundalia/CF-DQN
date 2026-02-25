@@ -9,21 +9,18 @@
             "python": "${workspaceFolder}/.venv/bin/python",
             "args": [
                 "--env-id", "CartPole-v1",
-                "--total-timesteps", "1000000",
+                "--total-timesteps", "500000",
                 "--learning-rate", "0.0005",
                 "--batch-size", "128",
-                // "--target-network-frequency", "2000",
                 "--K", "256",
                 "--w", "1.0",
                 "--track",
                 "--wandb-project-name", "Deep-CVI-Experiments",
                 "--end-e", "0.0",
-                "--seed", "3",
+                "--seed", "100",
                 "--exploration-fraction", "0.3",
-                "--buffer-size", "10000", 
+                "--buffer-size", "50000", 
                 "--n-collapse-pairs", "5",
-                "--collapse-start-pair", "3",
-                "--q-value-clip", "500.0"
 
             ],
             "justMyCode": true
