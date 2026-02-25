@@ -77,6 +77,8 @@ class Args:
     """timestep to start learning"""
     train_frequency: int = 10
     """the frequency of training"""
+    cf_reg_weight: float = 0.1
+    """weight for soft CF(0)=1+0j regularization loss"""
 
 
 def make_env(env_id, seed, idx, capture_video, run_name):
@@ -94,14 +96,12 @@ def make_env(env_id, seed, idx, capture_video, run_name):
     return thunk
 
 
-# ALGO LOGIC: initialize agent here:
 class CF_QNetwork(nn.Module):
     def __init__(self, envs, actual_grid_size):
         super().__init__()
         self.action_dim = envs.single_action_space.n
         self.K = actual_grid_size 
         
-        # Standard CleanRL MLP for environments like CartPole
         self.network = nn.Sequential(
             nn.Linear(np.array(envs.single_observation_space.shape).prod(), 120),
             nn.ReLU(),
@@ -117,21 +117,14 @@ class CF_QNetwork(nn.Module):
         out = out.view(out.shape[0], self.action_dim, self.K, 2)
         V_complex = torch.complex(out[..., 0], out[..., 1])
         
-        #! Hard normalization to ensure 1+0j is always respected at the center of the grid
-        #TODO: a reviser!
-        mag_raw = torch.abs(V_complex)
-        phase_raw = torch.angle(V_complex)
-        
+        # Return raw CF — enforce V(0)=1+0j via soft regularization in the loss
+        return V_complex
+    
+    def cf_at_zero(self, x):
+        """Return the raw CF value at omega=0 for regularization."""
+        V_complex = self.forward(x)
         zero_idx = self.K // 2
-        
-        mag_at_zero = mag_raw[..., zero_idx : zero_idx + 1]
-        phase_at_zero = phase_raw[..., zero_idx : zero_idx + 1]
-        
-        mag_norm = mag_raw / (mag_at_zero + 1e-8) 
-        phase_norm = phase_raw - phase_at_zero
-        
-        V_valid = mag_norm * torch.complex(torch.cos(phase_norm), torch.sin(phase_norm))
-        return V_valid
+        return V_complex[..., zero_idx]  # shape (batch, action_dim)
 
 def linear_schedule(start_e: float, end_e: float, duration: int, t: int):
     slope = (end_e - start_e) / duration
@@ -281,7 +274,15 @@ if __name__ == "__main__":
                 current_V = current_V_complex_all[batch_idx, data.actions.flatten()]
                 
                 # Compute Complex MSE Loss in Frequency Domain
-                loss = torch.mean(torch.abs(current_V - y_target) ** 2)
+                bellman_loss = torch.mean(torch.abs(current_V - y_target) ** 2)
+                
+                # Soft regularization: encourage V(0) = 1+0j for all actions
+                zero_idx = actual_grid_size // 2
+                cf_at_zero = current_V_complex_all[:, :, zero_idx]  # (batch, actions)
+                target_one = torch.ones_like(cf_at_zero)  # 1+0j
+                cf_reg_loss = torch.mean(torch.abs(cf_at_zero - target_one) ** 2)
+                
+                loss = bellman_loss + args.cf_reg_weight * cf_reg_loss
 
                 if global_step % 100 == 0:
                     writer.add_scalar("losses/loss", loss.item(), global_step)
@@ -289,6 +290,15 @@ if __name__ == "__main__":
                     current_Q_taken = current_Q_all[batch_idx, data.actions.flatten()]
                     writer.add_scalar("losses/q_values", current_Q_taken.mean().item(), global_step)
                     writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
+                    # Diagnostics
+                    q_gap = (current_Q_all.max(dim=1).values - current_Q_all.min(dim=1).values).mean()
+                    writer.add_scalar("diagnostics/q_action_gap", q_gap.item(), global_step)
+                    total_norm = sum(p.grad.data.norm(2).item() ** 2 for p in q_network.parameters() if p.grad is not None) ** 0.5
+                    writer.add_scalar("diagnostics/grad_norm", total_norm, global_step)
+                    writer.add_scalar("diagnostics/bellman_loss", bellman_loss.item(), global_step)
+                    writer.add_scalar("diagnostics/cf_reg_loss", cf_reg_loss.item(), global_step)
+                    writer.add_scalar("diagnostics/cf_mag_at_zero", torch.abs(cf_at_zero).mean().item(), global_step)
+                    writer.add_scalar("diagnostics/cf_phase_at_zero", torch.angle(cf_at_zero).mean().item(), global_step)
 
                 optimizer.zero_grad()
                 loss.backward()
