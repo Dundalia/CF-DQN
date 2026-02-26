@@ -3,7 +3,7 @@
 #SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-gpu=4
 #SBATCH --ntasks=1
-#SBATCH --array=0-59%10          # 60 total runs (5 seeds × 4 n_collapse_pairs × 3 buffer_sizes), 10 parallel
+#SBATCH --array=0-19%10          # 20 total runs (5 seeds × 4 learning rates), 10 parallel
 #SBATCH --output=slurm/logs/sym-fd-sweep-cartpole/sweep_%A_%a.out
 #SBATCH --mem-per-cpu=12G
 #SBATCH --time=4:00:00           # CartPole 500k steps ≈ 5 min per run
@@ -27,11 +27,11 @@
 ################################################################################
 
 # ===== EDIT THIS LINE WITH YOUR SWEEP ID =====
-SWEEP_ID="${SWEEP_ID:-fatty_data/CF-DQN-cleanrl/538efz7i}"
+SWEEP_ID="${SWEEP_ID:-fatty_data/CF-DQN-cleanrl/727rydma}"
 
 # ==============================================
 
-mkdir -p slurm/logs/sym-fd-sweep-cartpole/
+mkdir -p slurm/logs/sym-fd-sweep-cartpole-lr/
 
 echo "=========================================="
 echo "SymFD Sensitivity Sweep — CartPole-v1"

@@ -35,15 +35,13 @@ parameters:
   total-timesteps:
     value: 500000
   wandb-project-name:
-    value: "Deep-CVI-Experiments"
+    value: "CF-DQN-cleanrl"
 
   # ── Fixed: CF and RL config ──────────────────────────────────────────────
   K:
     value: 256
   w:
     value: 1.0
-  learning-rate:
-    value: 0.0005
   batch-size:
     value: 128
   exploration-fraction:
@@ -57,8 +55,16 @@ parameters:
   seed:
     values: [1, 2, 3, 4, 5]
 
+  # n_collapse_pairs: sweep concluded n=5 is best; lock it in
   n-collapse-pairs:
-    values: [3, 5, 7, 10]
+    value: 5
 
+  # buffer_size: sweep concluded 10k is best; lock it in
   buffer-size:
-    values: [10000, 25000, 50000]
+    value: 10000
+
+  # learning-rate: primary driver of bootstrap stability across seeds.
+  # 0.0005 causes Q=86..216 variance across seeds (slope_spread up to 27).
+  # Hypothesis: smaller lr → more stable bootstrap → lower seed variance.
+  learning-rate:
+    values: [0.00005, 0.0001, 0.00025, 0.0005]

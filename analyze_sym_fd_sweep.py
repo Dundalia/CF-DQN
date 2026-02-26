@@ -30,6 +30,7 @@ for run in sweep.runs:
         "seed":              run.config.get("seed"),
         "n_collapse_pairs":  run.config.get("n_collapse_pairs"),
         "buffer_size":       run.config.get("buffer_size"),
+        "learning_rate":     run.config.get("learning_rate"),
         "moving_avg":        run.summary.get("charts/moving_avg_return"),
         "q_values":          run.summary.get("losses/q_values"),
         "target_q":          run.summary.get("diagnostics/target_q_values"),
@@ -43,7 +44,10 @@ df = pd.DataFrame(rows)
 print(f"Total finished runs: {len(df)}")
 
 # ── Aggregate over seeds ──────────────────────────────────────────────────────
-group_cols = ["n_collapse_pairs", "buffer_size"]
+# Use whichever columns actually vary in this sweep
+vary_cols = [c for c in ["learning_rate", "n_collapse_pairs", "buffer_size"]
+             if c in df.columns and df[c].nunique() > 1]
+group_cols = vary_cols if vary_cols else ["n_collapse_pairs", "buffer_size"]
 agg = df.groupby(group_cols).agg(
     n_seeds      = ("seed", "count"),
     avg_return    = ("moving_avg", "mean"),
@@ -70,19 +74,19 @@ best = agg.iloc[0]
 print("\n" + "=" * 120)
 print("BEST CONFIG")
 print("=" * 120)
-print(f"  n_collapse_pairs = {int(best['n_collapse_pairs'])}")
-print(f"  buffer_size      = {int(best['buffer_size'])}")
-print(f"  moving_avg       = {best['avg_return']:.1f} ± {best['std_return']:.1f}")
-print(f"  range            = [{best['min_return']:.1f}, {best['max_return']:.1f}]")
-print(f"  avg Q            = {best['avg_q']:.1f}")
-print(f"  avg slope spread = {best['avg_spread']:.1f}")
-print(f"  n_seeds          = {int(best['n_seeds'])}")
+for col in group_cols:
+    print(f"  {col:25s} = {best[col]}")
+print(f"  {'moving_avg':25s} = {best['avg_return']:.1f} ± {best['std_return']:.1f}")
+print(f"  {'range':25s} = [{best['min_return']:.1f}, {best['max_return']:.1f}]")
+print(f"  {'avg Q':25s} = {best['avg_q']:.1f}")
+print(f"  {'avg slope spread':25s} = {best['avg_spread']:.1f}")
+print(f"  {'n_seeds':25s} = {int(best['n_seeds'])}")
 
 # ── Per-seed breakdown for the best config ────────────────────────────────────
-best_runs = df[
-    (df["n_collapse_pairs"] == best["n_collapse_pairs"]) &
-    (df["buffer_size"] == best["buffer_size"])
-].sort_values("seed")
+mask = pd.Series([True] * len(df), index=df.index)
+for col in group_cols:
+    mask &= (df[col] == best[col])
+best_runs = df[mask].sort_values("seed")
 
 print("\n  Per-seed breakdown:")
 for _, r in best_runs.iterrows():
