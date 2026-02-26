@@ -6,7 +6,7 @@
 #SBATCH --array=0-59%10          # 60 total runs (5 seeds × 4 n_collapse_pairs × 3 buffer_sizes), 10 parallel
 #SBATCH --output=slurm/logs/sym-fd-sweep-cartpole/sweep_%A_%a.out
 #SBATCH --mem-per-cpu=12G
-#SBATCH --time=2:00:00           # CartPole 500k steps ≈ 5 min per run
+#SBATCH --time=4:00:00           # CartPole 500k steps ≈ 5 min per run
 
 ################################################################################
 # SymFD Sensitivity Sweep — CartPole-v1
