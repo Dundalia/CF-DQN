@@ -273,14 +273,24 @@ if __name__ == "__main__":
                     # 4. Handle terminal states 
                     gammas = args.gamma * (1 - data.dones)
                     
-                    # 5. Interpolate at scaled frequencies
+                    #! 5. Interpolate at scaled frequencies
                     interp_V = polar_interpolation(omega_grid, target_V_next, gammas)
                     
-                    # 6. Apply reward rotation: e^{i * w * R}
+                    #! NEW: Clean the interpolated target to destroy negative-tail noise
+                    clean_interp_V = get_cleaned_target_cf(omega_grid, interp_V)
+                    
+                    #! 6. Apply reward rotation: e^{i * w * R}
                     reward_rotation = torch.exp(1j * omega_grid.view(1, -1) * data.rewards)
                     
-                    # 7. Final Bellman Target
-                    y_target = reward_rotation * interp_V 
+                    #! 7. Final Bellman Target
+                    y_target = reward_rotation * clean_interp_V
+                    
+                    # # 5. Interpolate at scaled frequencies
+                    # interp_V = polar_interpolation(omega_grid, target_V_next, gammas)
+                    # # 6. Apply reward rotation: e^{i * w * R}
+                    # reward_rotation = torch.exp(1j * omega_grid.view(1, -1) * data.rewards)
+                    # # 7. Final Bellman Target
+                    # y_target = reward_rotation * interp_V 
 
                 current_V_complex_all = q_network(data.observations)
                 current_V = current_V_complex_all[batch_idx, data.actions.flatten()]

@@ -2,6 +2,42 @@ import os
 import torch
 import math
 
+def get_cleaned_target_cf(omega_grid, V_complex_target):
+    """
+    Cleans the target Characteristic Function by transforming it to the spatial domain,
+    masking out impossible values (noise/ringing), and projecting it back to frequency space.
+    """
+    K = V_complex_target.shape[-1]
+    W = torch.abs(omega_grid[0]).item()
+    dx = math.pi / W
+    x_grid = torch.linspace(- (K // 2) * dx, (K // 2 - 1) * dx, K, device=V_complex_target.device)
+    
+    # 1. Transform to spatial domain (IFFT)
+    V_shifted = torch.fft.ifftshift(V_complex_target, dim=-1)
+    pdf_complex = torch.fft.ifft(V_shifted, dim=-1)
+    pdf = torch.clamp(torch.fft.fftshift(pdf_complex.real, dim=-1), min=0.0)
+    
+    # 2. Apply spatial mask to destroy the accumulated noise
+    valid_mask = (x_grid >= 0.0) & (x_grid <= 100.0)
+    pdf_clean = pdf * valid_mask.float()
+    
+    # 3. Normalize back to a valid probability distribution
+    pdf_clean = pdf_clean / (pdf_clean.sum(dim=-1, keepdim=True) + 1e-8)
+    
+    # 4. Project back to frequency space using the analytical CF definition: E[e^{i w X}]
+    # omega_grid shape: (K,), x_grid shape: (K,)
+    # We want a target CF of shape (Batch, K)
+    
+    # Create the transformation matrix: e^{i * omega * x}
+    # Shape: (K_omega, K_x)
+    transform_matrix = torch.exp(1j * omega_grid.unsqueeze(1) * x_grid.unsqueeze(0))
+    
+    # Compute the expected value over the cleaned PDF
+    # Shape: (Batch, 1, K_x) @ (K_x, K_omega) -> (Batch, 1, K_omega) -> (Batch, K)
+    cleaned_cf = torch.matmul(pdf_clean.unsqueeze(1).complex(), transform_matrix.T).squeeze(1)
+    
+    return cleaned_cf
+
 def create_uniform_grid(K: int, W: float, device="cpu"):
     """
     Constructs a uniform frequency grid required for Fast Fourier Transforms.
