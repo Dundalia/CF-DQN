@@ -137,11 +137,13 @@ def unwrap_phase(phase, dim=-1):
 def polar_interpolation(omega_grid, target_V_complex, gammas):
     """
     Interpolates the target network's CF at the scaled frequencies (gamma * omega).
-    Interpolates magnitude and phase separately to preserve the distribution's variance,
-    using circular shortest-path math to prevent phase wrapping artifacts.
+    Interpolates magnitude and unwrapped phase separately to prevent phase wrapping artifacts.
     """
     magnitudes = torch.abs(target_V_complex) 
     phases = torch.angle(target_V_complex) 
+    
+    # * NEW: Globally unwrap the phase into a continuous line first!
+    unwrapped_phases = unwrap_phase(phases, dim=-1)
     
     gamma_target_omega = gammas * omega_grid.view(1, -1) 
     
@@ -156,19 +158,15 @@ def polar_interpolation(omega_grid, target_V_complex, gammas):
     
     batch_idx = torch.arange(target_V_complex.shape[0], device=target_V_complex.device).unsqueeze(1)
     
-    # 1. Linearly interpolate magnitude (preserves distribution structure)
+    # 1. Linearly interpolate magnitude
     mag_left = magnitudes[batch_idx, idx_left]
     mag_right = magnitudes[batch_idx, idx_right]
     interp_mag = (1 - t) * mag_left + t * mag_right
     
-    # 2. Circularly interpolate phase (shortest path on the unit circle)
-    phase_left = phases[batch_idx, idx_left]
-    phase_right = phases[batch_idx, idx_right]
-    
-    phase_diff = phase_right - phase_left
-    phase_diff = (phase_diff + math.pi) % (2 * math.pi) - math.pi  # Wrap to [-pi, pi]
-    
-    interp_phase = phase_left + t * phase_diff
+    # 2. Linearly interpolate the UNWRAPPED phase (Safe from aliasing)
+    phase_left = unwrapped_phases[batch_idx, idx_left]
+    phase_right = unwrapped_phases[batch_idx, idx_right]
+    interp_phase = phase_left + t * (phase_right - phase_left)
     
     return interp_mag * torch.complex(torch.cos(interp_phase), torch.sin(interp_phase))
 
@@ -225,31 +223,39 @@ def safe_collapse_q_values(omega_grid, V_complex, q_max_hint=600.0):
     
     return gaussian_collapse_q_values(omega_grid, V_complex, n_pairs=n_safe)
 
-def _plot_unwrap_phase_debug(phase_tensor: torch.Tensor, unwrapped_tensor: torch.Tensor, dim: int) -> None:
-    import matplotlib.pyplot as plt
+import math
 
-    with torch.no_grad():
-        t_cpu = phase_tensor.detach().to("cpu")
-        u_cpu = unwrapped_tensor.detach().to("cpu")
-        if t_cpu.ndim == 0:
-            wrapped_curve = t_cpu.unsqueeze(0).numpy()
-            unwrapped_curve = u_cpu.unsqueeze(0).numpy()
-            axis = 0
-        else:
-            axis = dim % t_cpu.ndim
-            wrapped_curve = t_cpu.moveaxis(axis, -1).reshape(-1, t_cpu.shape[axis])[0].numpy()
-            unwrapped_curve = u_cpu.moveaxis(axis, -1).reshape(-1, u_cpu.shape[axis])[0].numpy()
+def calculate_optimal_cf_grid_params(q_min: float, q_max: float, desired_resolution=1.0, safety_factor=2.0):
+    """
+    Calculates the mathematically optimal W and K for Distributional RL in the frequency domain.
+    
+    Args:
+        q_min: Minimum possible return in the environment.
+        q_max: Maximum possible return in the environment.
+        desired_resolution: The spatial bin width (dx). 1.0 means bins at [..., 99, 100, 101, ...].
+        safety_factor: Multiplier to prevent phase wrapping from neural network noise (Gibbs ringing).
+                       2.0 means the grid can theoretically support 2x your max Q-value before aliasing.
+    
+    Returns:
+        W (float): Maximum frequency.
+        K (int): Number of frequency points (guaranteed to be even).
+    """
+    # 1. Find the absolute furthest point from 0 the grid needs to support
+    q_bound = max(abs(q_min), abs(q_max))
+    
+    # 2. Lock down the spatial resolution
+    W = math.pi / desired_resolution
+    
+    # 3. Calculate the minimum K to safely cover Q_bound without phase wrapping
+    min_k_required = (2.0 * W * q_bound) / math.pi
+    
+    # 4. Apply the safety margin to absorb noise
+    target_k = min_k_required * safety_factor
+    
+    # 5. Round up to the nearest even integer (required for FFT symmetry)
+    K = int(math.ceil(target_k))
+    if K % 2 != 0:
+        K += 1
+        
+    return W, K
 
-    x = range(len(wrapped_curve))
-    fig, ax = plt.subplots(figsize=(8, 3))
-    ax.plot(x, wrapped_curve, label="wrapped phase", linewidth=1.2, alpha=0.7)
-    ax.plot(x, unwrapped_curve, label="unwrapped phase", linewidth=1.2)
-    ax.set_title(f"unwrap_phase debug (dim={axis})")
-    ax.set_xlabel("index")
-    ax.set_ylabel("phase (rad)")
-    ax.legend()
-    fig.tight_layout()
-    fig.canvas.draw_idle()
-    plt.show(block=False)
-    plt.pause(0.001)
-    plt.close(fig)
