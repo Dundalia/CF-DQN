@@ -3,9 +3,11 @@ import math
 
 def get_cleaned_target_cf(omega_grid, V_complex_target, q_min=0.0, q_max=100.0):
     """
-    Cleans the target CF by projecting it onto a valid distribution with support in [q_min, q_max].
-    Uses the EXACT reverse PyTorch DFT operations to prevent aliasing.
-    Requires a uniform frequency grid.
+    The goal of this function is pretty simple, take the V_complex_target,
+    convert it back to spatial domain to get the PDF, apply the the distributional mask to remove the incoherent probability mass,
+    and then convert it back to the frequency domain to get a cleaned CF target.
+    
+    This way we can still use the 
     """
     K = V_complex_target.shape[-1]
     W = torch.abs(omega_grid[0]).item()
@@ -41,7 +43,7 @@ def create_uniform_grid(K: int, W: float, device="cpu"):
     grid = torch.linspace(-W, W - dw, K, device=device)
     return grid
 
-def ifft_collapse_q_values(omega_grid, V_complex, q_min=0.0, q_max=100.0):
+def ifft_collapse_q_values(omega_grid, V_complex, q_min=0.0, q_max=100.0, return_diagnostics=False):
     """
     Extracts Q-values by transforming the CF back into a Probability Density Function (PDF)
     using the Inverse Fast Fourier Transform, then computing the expected value E[x].
@@ -66,12 +68,18 @@ def ifft_collapse_q_values(omega_grid, V_complex, q_min=0.0, q_max=100.0):
     #* [0, ..., W - dw, -W, ..., -dw] -> [-W, ..., -dw, 0, dw, ..., W - dw]
     pdf_shifted = torch.fft.fftshift(pdf_complex.real, dim=-1)
     
-    valid_mask = (q_values_gird >= q_min) & (q_values_gird <= q_max)
     pdf_unmasked = torch.clamp(pdf_shifted, min=0.0)
+    pdf_unmasked_normalized = pdf_unmasked / (pdf_unmasked.sum(dim=-1, keepdim=True) + 1e-8) #! re-normalize after masking to ensure it's a valid PDF
+    expected_q_value_scalar_unmasked = torch.sum(pdf_unmasked_normalized * q_values_gird, dim=-1)
+    
+    valid_mask = (q_values_gird >= q_min) & (q_values_gird <= q_max)
     pdf_masked = pdf_unmasked * valid_mask.float()
     pdf_masked_normalized = pdf_masked / (pdf_masked.sum(dim=-1, keepdim=True) + 1e-8) #! re-normalize after masking to ensure it's a valid PDF
     expected_q_value_scalar = torch.sum(pdf_masked_normalized * q_values_gird, dim=-1)
     
+    if return_diagnostics:
+        return expected_q_value_scalar, expected_q_value_scalar_unmasked, pdf_unmasked
+
     return expected_q_value_scalar
 
 def create_three_density_grid(K: int, W: float, device="cpu"):

@@ -125,11 +125,13 @@ class CF_QNetwork(nn.Module):
         # Hard normalization to ensure V(0) = 1+0j is always respected.
         # This is mathematically exact: phi(0) = E[e^{i*0*G}] = 1.
         V_at_zero = V_complex[..., self.zero_idx : self.zero_idx + 1]
+        self._v_at_zero_mag = torch.abs(V_at_zero).detach()  # Diagnostic: track raw |V(0)|
         V_valid = V_complex / (V_at_zero + 1e-8)
         
         # Enforce |V(ω)| ≤ 1: a necessary condition for any valid characteristic function.
         # Scale down where |V| > 1 while preserving the phase.
         magnitude = torch.abs(V_valid)
+        self._pre_clamp_max_mag = magnitude.max().detach()  # Diagnostic: how much clipping is needed
         V_valid = V_valid / torch.clamp(magnitude, min=1.0)
         
         return V_valid
@@ -319,9 +321,48 @@ if __name__ == "__main__":
                         # CF validity: max magnitude should stay ≤ 1 by construction
                         max_q_est = current_Q_all.abs().max().item()
                         writer.add_scalar("diagnostics/max_q_magnitude", max_q_est, global_step)
-
+                    
+                    # === SUSPECT 1: V(0) normalization health ===
+                    # If min |V(0)| drops near 0, the division blows up the CF
+                    writer.add_scalar("diagnostics/v_at_zero_mag_min", q_network._v_at_zero_mag.min().item(), global_step)
+                    writer.add_scalar("diagnostics/v_at_zero_mag_mean", q_network._v_at_zero_mag.mean().item(), global_step)
+                    # How much magnitude clipping was needed (>1 means network wants invalid CFs)
+                    writer.add_scalar("diagnostics/pre_clamp_max_magnitude", q_network._pre_clamp_max_mag.item(), global_step)
+                    
+                    # === SUSPECT 2: Phase interpolation health ===
+                    with torch.no_grad():
+                        target_phases = torch.angle(target_V_complex_all[batch_idx, next_actions])
+                        phase_diffs = torch.diff(target_phases, dim=-1)
+                        max_phase_jump = phase_diffs.abs().max().item()
+                        mean_phase_jump = phase_diffs.abs().mean().item()
+                        writer.add_scalar("diagnostics/phase_max_jump", max_phase_jump, global_step)
+                        writer.add_scalar("diagnostics/phase_mean_jump", mean_phase_jump, global_step)
+                    
+                    # === SUSPECT 3: Spatial mask clipping ===
+                    with torch.no_grad():
+                        # Compare masked vs unmasked Q-values to see if the mask is clipping real mass
+                        q_masked, q_unmasked, pdf_unmasked = ifft_collapse_q_values(
+                            omega_grid, current_V_complex_all, q_min=args.q_min, q_max=args.q_max, return_diagnostics=True
+                        )
+                        mask_bias = (q_unmasked - q_masked).abs().mean().item()
+                        writer.add_scalar("diagnostics/mask_bias", mask_bias, global_step)
+                        # What fraction of PDF mass falls outside [q_min, q_max]?
+                        K = current_V_complex_all.shape[-1]
+                        W = torch.abs(omega_grid[0]).item()
+                        dx = math.pi / W
+                        x_grid = torch.linspace(-(K // 2) * dx, (K // 2 - 1) * dx, K, device=device)
+                        valid_mask = (x_grid >= args.q_min) & (x_grid <= args.q_max)
+                        mass_outside = (pdf_unmasked * (~valid_mask).float()).sum(dim=-1).mean().item()
+                        writer.add_scalar("diagnostics/pdf_mass_outside_support", mass_outside, global_step)
+                    
                 optimizer.zero_grad()
                 loss.backward()
+                
+                # === GRADIENT HEALTH (must be after backward, before clip) ===
+                if global_step % 100 == 0:
+                    total_grad_norm = sum(p.grad.norm().item() ** 2 for p in q_network.parameters() if p.grad is not None) ** 0.5
+                    writer.add_scalar("diagnostics/grad_norm_before_clip", total_grad_norm, global_step)
+                
                 nn.utils.clip_grad_norm_(q_network.parameters(), args.max_grad_norm)
                 optimizer.step()
                 
