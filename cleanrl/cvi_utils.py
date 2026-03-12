@@ -198,6 +198,33 @@ def gaussian_collapse_q_values(omega_grid, V_complex, n_pairs=5):
 
     return slopes.mean(dim=-1)
 
+
+def safe_collapse_q_values(omega_grid, V_complex, q_max_hint=600.0):
+    """
+    Adaptively extracts Q-values using only phase-safe frequency pairs.
+    
+    For each symmetric pair k, the constraint is: 2 * omega_k * |Q| < pi.
+    This function automatically selects the maximum number of usable pairs
+    given q_max_hint, which should be an upper bound on expected Q-values.
+    
+    Falls back to pair-1-only if no multi-pair configuration is safe.
+    """
+    zero_idx = len(omega_grid) // 2
+    
+    # Determine how many pairs are safe: 2 * omega_k * q_max_hint < pi
+    max_omega = math.pi / (2.0 * q_max_hint)
+    
+    # Find how many pairs from center satisfy the constraint
+    n_safe = 0
+    for k in range(1, zero_idx):
+        if omega_grid[zero_idx + k].item() < max_omega:
+            n_safe = k
+        else:
+            break
+    n_safe = max(n_safe, 1)  # Always use at least pair 1
+    
+    return gaussian_collapse_q_values(omega_grid, V_complex, n_pairs=n_safe)
+
 def _plot_unwrap_phase_debug(phase_tensor: torch.Tensor, unwrapped_tensor: torch.Tensor, dim: int) -> None:
     import matplotlib.pyplot as plt
 

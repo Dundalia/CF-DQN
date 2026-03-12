@@ -1,4 +1,5 @@
 import os
+import math
 import random
 import time
 from dataclasses import dataclass
@@ -12,11 +13,10 @@ import tyro
 from torch.utils.tensorboard import SummaryWriter
 
 from collections import deque
-import numpy as np
 
 from cleanrl_utils.buffers import ReplayBuffer
 
-from cleanrl.cvi_utils import create_three_density_grid, polar_interpolation, gaussian_collapse_q_values, create_uniform_grid, ifft_collapse_q_values, get_cleaned_target_cf
+from cleanrl.cvi_utils import create_three_density_grid, polar_interpolation, gaussian_collapse_q_values, safe_collapse_q_values, create_uniform_grid, ifft_collapse_q_values, get_cleaned_target_cf
 
 
 @dataclass
@@ -53,27 +53,29 @@ class Args:
     """the learning rate of the optimizer"""
     num_envs: int = 1
     """the number of parallel game environments"""
-    K: int = 64
+    K: int = 128
     """the number of frequency grid points"""
-    w: float = 5.0
+    w: float = 1.0
     """the frequency range [-W, W] for the grid construction during training"""
-    n_collapse_pairs: int = 5
-    """number of innermost symmetric frequency pairs used to collapse CF → Q-value; a smaller number means more conservative collapse with lower variance but higher bias"""
+    n_collapse_pairs: int = 1
+    """number of innermost symmetric frequency pairs used to collapse CF → Q-value; MUST satisfy 2*omega_k*Q_max < pi for all pairs used"""
+    q_max_bound: float = 200.0
+    """upper bound on expected Q-values for phase-safety checks (CartPole gamma=0.99: true Q_max~100, 2x margin)"""
     buffer_size: int = 10000
     """the replay memory buffer size"""
     gamma: float = 0.99
     """the discount factor gamma"""
     tau: float = 0.005
     """the soft update coefficient for Polyak target network updates"""
-    # target_network_frequency: int = 2000
-    # """the frequency at which the target network is updated (hard copy)"""
+    target_network_frequency: int = 1000
+    """the frequency at which the target network is hard-updated (0 to disable, use Polyak only)"""
     batch_size: int = 128
     """the batch size of sample from the reply memory"""
     start_e: float = 1
     """the starting epsilon for exploration"""
-    end_e: float = 0.00
+    end_e: float = 0.05
     """the ending epsilon for exploration"""
-    exploration_fraction: float = 0.3
+    exploration_fraction: float = 0.5
     """the fraction of `total-timesteps` it takes from start-e to go end-e"""
     learning_starts: int = 10000
     """timestep to start learning"""
@@ -103,6 +105,7 @@ class CF_QNetwork(nn.Module):
         super().__init__()
         self.action_dim = envs.single_action_space.n
         self.K = actual_grid_size 
+        self.zero_idx = actual_grid_size // 2  # Center of the symmetric grid
         
         self.network = nn.Sequential(
             nn.Linear(np.array(envs.single_observation_space.shape).prod(), 120),
@@ -120,20 +123,11 @@ class CF_QNetwork(nn.Module):
         V_complex = torch.complex(out[..., 0], out[..., 1])
         
         # Hard normalization to ensure V(0) = 1+0j is always respected.
-        # This provides the inductive bias that outputs are valid CFs,
-        # which is critical for gaussian_collapse phase-slope extraction.
-        mag_raw = torch.abs(V_complex)
-        phase_raw = torch.angle(V_complex)
+        # Divide by the value at omega=0 so that the CF is valid by construction.
+        # This is mathematically exact: phi(0) = E[e^{i*0*G}] = 1.
+        V_at_zero = V_complex[..., self.zero_idx : self.zero_idx + 1]
+        V_valid = V_complex / (V_at_zero + 1e-8)
         
-        zero_idx = self.K // 2
-        
-        mag_at_zero = mag_raw[..., zero_idx : zero_idx + 1]
-        phase_at_zero = phase_raw[..., zero_idx : zero_idx + 1]
-        
-        mag_norm = mag_raw / (mag_at_zero + 1e-8) 
-        phase_norm = phase_raw - phase_at_zero
-        
-        V_valid = mag_norm * torch.complex(torch.cos(phase_norm), torch.sin(phase_norm))
         return V_valid
 
 def linear_schedule(start_e: float, end_e: float, duration: int, t: int):
@@ -209,7 +203,7 @@ if __name__ == "__main__":
             #! CVI action selection
             with torch.no_grad():
                 V_complex_all = q_network(torch.Tensor(obs).to(device))
-                q_values = gaussian_collapse_q_values(omega_grid, V_complex_all, n_pairs=args.n_collapse_pairs)
+                q_values = safe_collapse_q_values(omega_grid, V_complex_all, q_max_hint=args.q_max_bound)
                 actions = torch.argmax(q_values, dim=1).cpu().numpy()
             
             #* C51 action selection for reference
@@ -263,7 +257,7 @@ if __name__ == "__main__":
                     #    target network EVALUATES it. Decouples selection from evaluation,
                     #    breaking the positive feedback loop that causes Q overestimation.
                     online_V_next_all = q_network(data.next_observations)
-                    online_Q_next = gaussian_collapse_q_values(omega_grid, online_V_next_all, n_pairs=args.n_collapse_pairs)
+                    online_Q_next = safe_collapse_q_values(omega_grid, online_V_next_all, q_max_hint=args.q_max_bound)
                     next_actions = torch.argmax(online_Q_next, dim=1)  # selected by online network
                     
                     # 3. Select the CF of the greedy action (evaluated by target network)
@@ -272,15 +266,6 @@ if __name__ == "__main__":
                     
                     # 4. Handle terminal states 
                     gammas = args.gamma * (1 - data.dones)
-                    
-                    #! 5. Interpolate at scaled frequencies
-                    #!interp_V = polar_interpolation(omega_grid, target_V_next, gammas)
-                    #! NEW: Clean the interpolated target to destroy negative-tail noise
-                    #!clean_interp_V = get_cleaned_target_cf(omega_grid, interp_V)
-                    #! 6. Apply reward rotation: e^{i * w * R}
-                    #!reward_rotation = torch.exp(1j * omega_grid.view(1, -1) * data.rewards)
-                    #! 7. Final Bellman Target
-                    #!y_target = reward_rotation * clean_interp_V
                     
                     # 5. Interpolate at scaled frequencies
                     interp_V = polar_interpolation(omega_grid, target_V_next, gammas)
@@ -293,36 +278,21 @@ if __name__ == "__main__":
                 current_V = current_V_complex_all[batch_idx, data.actions.flatten()]
                 
                 # Weighted MSE Loss in Frequency Domain with Gaussian Weights
-                sigma = 0.5 
+                # sigma controls how much of the spectrum contributes to the loss.
+                # With W=1.0, sigma=0.3 covers the useful Q-encoding band while
+                # providing enough gradient signal across the grid.
+                sigma = 0.3
                 weights = torch.exp(-(omega_grid ** 2) / (2 * sigma ** 2))
                 weights = weights / weights.sum()
                 unweighted_mse = torch.abs(current_V - y_target) ** 2
                 
                 weighted_mse = torch.sum(weights.view(1, -1) * unweighted_mse, dim=1)
-                base_loss = torch.mean(weighted_mse)
-                
-                # 2. Soft Validity Penalty (V(0) = 1)
-                raw_out = q_network.cf_head(q_network.network(data.observations))
-                raw_out = raw_out.view(raw_out.shape[0], q_network.action_dim, q_network.K, 2)
-                raw_complex = torch.complex(raw_out[..., 0], raw_out[..., 1])
-                
-                # Zero frequency is exactly at K // 2 in the uniform grid
-                zero_idx = q_network.K // 2
-                raw_at_zero = raw_complex[batch_idx, data.actions.flatten(), zero_idx]
-
-                validity_loss = torch.mean(torch.abs(raw_at_zero - 1.0) ** 2)
-                lambda_validity = 10.0
-                loss = base_loss + lambda_validity * validity_loss
-                
-                #! Compute Complex MSE Loss in Frequency Domain
-                #loss = torch.mean(torch.abs(current_V - y_target) ** 2)
+                loss = torch.mean(weighted_mse)
 
                 if global_step % 100 == 0:
                     writer.add_scalar("losses/loss", loss.item(), global_step)
-                    writer.add_scalar("losses/base_loss", base_loss.item(), global_step)
-                    writer.add_scalar("losses/validity_loss", validity_loss.item(), global_step)
                     
-                    current_Q_all = gaussian_collapse_q_values(omega_grid, current_V_complex_all, n_pairs=args.n_collapse_pairs)
+                    current_Q_all = safe_collapse_q_values(omega_grid, current_V_complex_all, q_max_hint=args.q_max_bound)
                     current_Q_taken = current_Q_all[batch_idx, data.actions.flatten()]
                     
                     writer.add_scalar("losses/q_values", current_Q_taken.mean().item(), global_step)
@@ -330,31 +300,46 @@ if __name__ == "__main__":
                     
                     with torch.no_grad():
                         target_V_diag = target_network(data.observations)
-                        target_Q_diag = gaussian_collapse_q_values(omega_grid, target_V_diag, n_pairs=args.n_collapse_pairs)
+                        target_Q_diag = safe_collapse_q_values(omega_grid, target_V_diag, q_max_hint=args.q_max_bound)
                         target_Q_taken_diag = target_Q_diag[batch_idx, data.actions.flatten()]
                         writer.add_scalar("diagnostics/target_q_values", target_Q_taken_diag.mean().item(), global_step)
                         
                         online_target_diff = (current_Q_all - target_Q_diag).abs().mean()
                         writer.add_scalar("diagnostics/q_online_target_diff", online_target_diff.item(), global_step)
                         
-                        mag_at_zero_diag = torch.abs(raw_complex[..., zero_idx]).mean()
-                        phase_at_zero_diag = torch.angle(raw_complex[..., zero_idx]).abs().mean()
-                        writer.add_scalar("diagnostics/cf_mag_scale", mag_at_zero_diag.item(), global_step)
-                        writer.add_scalar("diagnostics/cf_phase_at_zero", phase_at_zero_diag.item(), global_step)
+                        # Action gap: difference between best and second-best Q-value
+                        q_sorted = current_Q_all.sort(dim=1, descending=True).values
+                        action_gap = (q_sorted[:, 0] - q_sorted[:, 1]).mean()
+                        writer.add_scalar("diagnostics/action_gap", action_gap.item(), global_step)
                         
+                        # Phase safety check: max phase at collapse pairs
+                        zero_idx_diag = len(omega_grid) // 2
+                        pair1_omega = omega_grid[zero_idx_diag + 1].item()
+                        max_q_est = current_Q_all.abs().max().item()
+                        max_phase = 2 * pair1_omega * max_q_est
+                        writer.add_scalar("diagnostics/max_phase_pair1", max_phase, global_step)
+                        writer.add_scalar("diagnostics/phase_safe", float(max_phase < math.pi), global_step)
+                        writer.add_scalar("diagnostics/max_q_magnitude", max_q_est, global_step)
+                        
+                        # Log how many collapse pairs are being used
+                        max_omega_safe = math.pi / (2.0 * args.q_max_bound)
+                        n_safe = sum(1 for k in range(1, zero_idx_diag) if omega_grid[zero_idx_diag + k].item() < max_omega_safe)
+                        n_safe = max(n_safe, 1)
+                        writer.add_scalar("diagnostics/n_safe_pairs", n_safe, global_step)
 
                 optimizer.zero_grad()
                 loss.backward()
                 nn.utils.clip_grad_norm_(q_network.parameters(), args.max_grad_norm)
                 optimizer.step()
                 
-                #! Soft Polyak target network update (once per gradient step)
+            # Target network update
+            if args.target_network_frequency > 0 and global_step % args.target_network_frequency == 0:
+                # Hard update: periodically copy online -> target
+                target_network.load_state_dict(q_network.state_dict())
+            elif args.target_network_frequency == 0:
+                # Soft Polyak update every gradient step
                 for target_param, param in zip(target_network.parameters(), q_network.parameters()):
                     target_param.data.copy_(args.tau * param.data + (1.0 - args.tau) * target_param.data)
-
-            #! Hard target network update
-            # if global_step % args.target_network_frequency == 0:
-            #     target_network.load_state_dict(q_network.state_dict())
                 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
