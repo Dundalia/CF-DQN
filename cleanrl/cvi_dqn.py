@@ -183,7 +183,7 @@ if __name__ == "__main__":
     q_network = CF_QNetwork(envs, actual_grid_size=actual_grid_size).to(device)
     optimizer = optim.Adam(q_network.parameters(), lr=args.learning_rate, eps=0.01 / args.batch_size)
     target_network = CF_QNetwork(envs, actual_grid_size=actual_grid_size).to(device)
-    target_network.load_state_dict(q_network.state_dict())
+    target_network.load_state_dict(q_network.state_dict()) #* copies weights from online to target
 
     rb = ReplayBuffer(
         args.buffer_size,
@@ -248,49 +248,49 @@ if __name__ == "__main__":
 
         # ALGO LOGIC: training.
         #! CVI logic
-        if global_step > args.learning_starts:
+        if global_step > args.learning_starts: #* don't train until we have a certain number of transitions into the buffer
             if global_step % args.train_frequency == 0:
                 data = rb.sample(args.batch_size)
                 
                 with torch.no_grad():
-                    # 1. Get target CFs for all actions
+                    #* 1. Get target CFs for all actions
                     target_V_complex_all = target_network(data.next_observations)
 
-                    # 2. Double DQN: online network SELECTS the greedy next action,
-                    #    target network EVALUATES it. Decouples selection from evaluation,
-                    #    breaking the positive feedback loop that causes Q overestimation.
+                    #* 2. Double DQN: online network SELECTS the greedy next action,
+                    #*    target network EVALUATES it. Decouples selection from evaluation,
+                    #*    breaking the positive feedback loop that causes Q overestimation.
                     online_V_next_all = q_network(data.next_observations)
                     online_Q_next = ifft_collapse_q_values(omega_grid, online_V_next_all, q_min=args.q_min, q_max=args.q_max)
                     next_actions = torch.argmax(online_Q_next, dim=1)  # selected by online network
                     
-                    # 3. Select the CF of the greedy action (evaluated by target network)
+                    #* 3. Select the CF of the greedy action (evaluated by target network)
                     batch_idx = torch.arange(args.batch_size, device=device)
                     target_V_next = target_V_complex_all[batch_idx, next_actions]
                     
-                    # 4. Handle terminal states 
+                    #* 4. Handle terminal states 
                     gammas = args.gamma * (1 - data.dones)
                     
-                    # 5. Interpolate at scaled frequencies
+                    #* 5. Interpolate at scaled frequencies to account for discounting: V(ω) -> V(γ*ω)
                     interp_V = polar_interpolation(omega_grid, target_V_next, gammas)
-                    # 6. Apply reward rotation: e^{i * w * R}
+                    
+                    #* 6. Apply reward rotation: e^{i * w * R} in the frequency domain corresponds to shifting the distribution by R in the spatial domain.
                     reward_rotation = torch.exp(1j * omega_grid.view(1, -1) * data.rewards)
-                    # 7. Bellman target, then project onto valid distributions via IFFT cleaning
+                    
+                    #* 7. Bellman target, then project onto valid distributions via IFFT cleaning
                     y_target = reward_rotation * interp_V
-                    y_target = get_cleaned_target_cf(omega_grid, y_target, q_min=args.q_min, q_max=args.q_max)
+                    y_target = get_cleaned_target_cf(omega_grid, y_target, q_min=args.q_min, q_max=args.q_max) #TODO: understand what this function does
 
                 current_V_complex_all = q_network(data.observations)
-                current_V = current_V_complex_all[batch_idx, data.actions.flatten()]
+                current_V = current_V_complex_all[batch_idx, data.actions.flatten()] #TODO: does this do a avg over the action dimension?
                 
-                # Weighted MSE Loss in Frequency Domain with Gaussian Weights
-                # sigma controls how much of the spectrum contributes to the loss.
-                # With W=1.0, sigma=0.3 covers the useful Q-encoding band while
-                # providing enough gradient signal across the grid.
+                #*Weighted MSE Loss in Frequency Domain with Gaussian Weights 
+                #! the weights and parameters were left to be tuned (kept the one that were given initially)
                 sigma = 0.3
                 weights = torch.exp(-(omega_grid ** 2) / (2 * sigma ** 2))
-                weights = weights / weights.sum()
+                weights = weights / weights.sum() #* normalize weights to keep loss scale consistent regardless of K or W
                 unweighted_mse = torch.abs(current_V - y_target) ** 2
                 
-                weighted_mse = torch.sum(weights.view(1, -1) * unweighted_mse, dim=1)
+                weighted_mse = torch.sum(weights.view(1, -1) * unweighted_mse, dim=1) #TODO: check weights.view(1, -1)
                 loss = torch.mean(weighted_mse)
 
                 if global_step % 100 == 0:
@@ -325,14 +325,14 @@ if __name__ == "__main__":
                 nn.utils.clip_grad_norm_(q_network.parameters(), args.max_grad_norm)
                 optimizer.step()
                 
-            # Target network update
+            #* Target network update
             if args.target_network_frequency > 0 and global_step % args.target_network_frequency == 0:
-                # Hard update: periodically copy online -> target
+                #* Hard update: periodically copy online -> target
                 target_network.load_state_dict(q_network.state_dict())
             elif args.target_network_frequency == 0:
-                # Soft Polyak update every gradient step
+                #* Soft Polyak update every gradient step
                 for target_param, param in zip(target_network.parameters(), q_network.parameters()):
-                    target_param.data.copy_(args.tau * param.data + (1.0 - args.tau) * target_param.data)
+                    target_param.data.copy_(args.tau * param.data + (1.0 - args.tau) * target_param.data) #! online approximation of Polyak averaging for stability 
                 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
