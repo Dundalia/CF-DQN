@@ -212,7 +212,7 @@ if __name__ == "__main__":
             torch.profiler.ProfilerActivity.CPU,
             torch.profiler.ProfilerActivity.CUDA,
         ],
-        schedule=torch.profiler.schedule(wait=100, warmup=10, active=10, repeat=2),
+        schedule=torch.profiler.schedule(wait=100, warmup=10, active=10, repeat=1),
         on_trace_ready=torch.profiler.tensorboard_trace_handler(f"runs/{run_name}/profiler"),
         record_shapes=True,
         profile_memory=True,
