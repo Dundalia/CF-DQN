@@ -20,19 +20,19 @@
 # Submit: sbatch cvi_vs_c51_atari.sh
 ################################################################################
 
-ALGOS=(
-    "cleanrl/c51_atari.py"
-    "cleanrl/c51_atari.py"
-    "cleanrl/c51_atari.py"
-    "cleanrl/c51_atari.py"
-    "cleanrl/c51_atari.py"
-    "cleanrl/c51_atari.py"
-    "cleanrl/cvi_dqn_atari.py"
-    "cleanrl/cvi_dqn_atari.py"
-    "cleanrl/cvi_dqn_atari.py"
-    "cleanrl/cvi_dqn_atari.py"
-    "cleanrl/cvi_dqn_atari.py"
-    "cleanrl/cvi_dqn_atari.py"
+MODULES=(
+    "cleanrl.c51_atari"
+    "cleanrl.c51_atari"
+    "cleanrl.c51_atari"
+    "cleanrl.c51_atari"
+    "cleanrl.c51_atari"
+    "cleanrl.c51_atari"
+    "cleanrl.cvi_dqn_atari"
+    "cleanrl.cvi_dqn_atari"
+    "cleanrl.cvi_dqn_atari"
+    "cleanrl.cvi_dqn_atari"
+    "cleanrl.cvi_dqn_atari"
+    "cleanrl.cvi_dqn_atari"
 )
 
 ENV_IDS=(
@@ -52,7 +52,7 @@ ENV_IDS=(
 
 SEEDS=(1 2 3 1 2 3 1 2 3 1 2 3)
 
-SCRIPT=${ALGOS[$SLURM_ARRAY_TASK_ID]}
+MODULE=${MODULES[$SLURM_ARRAY_TASK_ID]}
 ENV_ID=${ENV_IDS[$SLURM_ARRAY_TASK_ID]}
 SEED=${SEEDS[$SLURM_ARRAY_TASK_ID]}
 
@@ -60,7 +60,7 @@ echo "=========================================="
 echo "CVI-DQN vs C51 — Atari Benchmark"
 echo "=========================================="
 echo "Task:     ${SLURM_ARRAY_TASK_ID} / 11"
-echo "Script:   ${SCRIPT}"
+echo "Module:   ${MODULE}"
 echo "Env:      ${ENV_ID}"
 echo "Seed:     ${SEED}"
 echo "Job ID:   ${SLURM_JOB_ID}"
@@ -73,7 +73,7 @@ echo "=========================================="
 # Had to uv sync --frozen from login node to create a stable .venv
 # Then I had to use --no-sync here to avoid the overhead of syncing the entire repo for each task otherwise they would access the same .venv and cause conflicts.
 
-srun uv run --no-sync python ${SCRIPT} \
+srun uv run --no-sync python -m ${MODULE} \
     --env-id ${ENV_ID} \
     --seed ${SEED} \
     --total-timesteps 10000000 \
