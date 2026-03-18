@@ -12,7 +12,7 @@
                 "--total-timesteps", "500000",
                 "--learning-rate", "0.00025",
                 "--batch-size", "512",
-                "--K", "128",
+                "--K", "256",
                 "--w", "0.5",
                 "--track",
                 "--wandb-project-name", "Deep-CVI-Experiments",
@@ -25,7 +25,7 @@
                 "--target-network-frequency", "0",
                 "--tau", "0.005",
                 "--num-envs", "64",
-                "--utd-ratio", "0.125",
+                "--utd-ratio", "0.1",
 
             ],
             "justMyCode": true
