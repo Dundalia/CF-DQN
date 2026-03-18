@@ -24,8 +24,8 @@
                 "--q-min", "0",
                 "--target-network-frequency", "0",
                 "--tau", "0.005",
-                "--num-envs", "64",
-                "--utd-ratio", "0.1",
+                "--num-envs", "48",
+                "--utd-ratio", "0.1"
 
             ],
             "justMyCode": true
@@ -76,6 +76,59 @@
                 "--buffer-size", "50000", 
                 "--n-collapse-pairs", "5",
 
+            ],
+            "justMyCode": true
+        },
+        {
+            "name": "cvi_dqn Atari Breakout",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "cleanrl.cvi_dqn_atari",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "args": [
+                "--env-id", "BreakoutNoFrameskip-v4",
+                "--total-timesteps", "10000000",
+                "--learning-rate", "0.00025",
+                "--batch-size", "32",
+                "--K", "128",
+                "--w", "1.0",
+                "--track",
+                "--wandb-project-name", "Deep-CVI-Experiments",
+                "--end-e", "0.01",
+                "--seed", "1",
+                "--exploration-fraction", "0.1",
+                "--buffer-size", "500000",
+                "--q-max", "10",
+                "--q-min", "-10",
+                "--target-network-frequency", "10000",
+                "--learning-starts", "80000",
+                "--train-frequency", "4"
+            ],
+            "justMyCode": true
+        },
+        {
+            "name": "c51 Atari Breakout",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "cleanrl.c51_atari",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "args": [
+                "--env-id", "BreakoutNoFrameskip-v4",
+                "--total-timesteps", "10000000",
+                "--learning-rate", "0.00025",
+                "--batch-size", "32",
+                "--n-atoms", "51",
+                "--v-min", "-10",
+                "--v-max", "10",
+                "--track",
+                "--wandb-project-name", "Deep-CVI-Experiments",
+                "--end-e", "0.01",
+                "--seed", "1",
+                "--exploration-fraction", "0.1",
+                "--buffer-size", "500000",
+                "--target-network-frequency", "10000",
+                "--learning-starts", "80000",
+                "--train-frequency", "4"
             ],
             "justMyCode": true
         }

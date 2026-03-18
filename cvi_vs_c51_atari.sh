@@ -77,7 +77,7 @@ srun uv run --no-sync python ${SCRIPT} \
     --env-id ${ENV_ID} \
     --seed ${SEED} \
     --total-timesteps 10000000 \
-    --wandb-project-name CVI-DQN \
+    --wandb-project-name Deep-CVI-Experiments \
     --track
 
 echo "Task ${SLURM_ARRAY_TASK_ID} completed"
