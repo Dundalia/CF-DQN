@@ -31,6 +31,35 @@
             "justMyCode": true
         },
         {
+            "name": "cvi_dqn_jax CartPole-v1",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "cleanrl.cvi_dqn_jax",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "args": [
+                "--env-id", "CartPole-v1",
+                "--total-timesteps", "500000",
+                "--learning-rate", "0.00025",
+                "--batch-size", "512",
+                "--K", "256",
+                "--w", "0.5",
+                "--track",
+                "--wandb-project-name", "Deep-CVI-Experiments",
+                "--end-e", "0.01",
+                "--seed", "300",
+                "--exploration-fraction", "0.3",
+                "--buffer-size", "50000",
+                "--q-max", "120",
+                "--q-min", "0",
+                "--target-network-frequency", "0",
+                "--tau", "0.005",
+                "--num-envs", "48",
+                "--utd-ratio", "0.1"
+
+            ],
+            "justMyCode": true
+        },
+        {
             "name": "cvi_dqn LunarLander-v2",
             "type": "debugpy",
             "request": "launch",
