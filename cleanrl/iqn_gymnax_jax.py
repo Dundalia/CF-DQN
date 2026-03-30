@@ -137,7 +137,8 @@ class IQNNetwork(eqx.Module):
         k = tau.shape[0]
         h_exp = jnp.broadcast_to(h, (k, h.shape[0]))
         cat = jnp.concatenate([h_exp, emb], axis=-1)
-        return self.head(cat)
+        # eqx.nn.Linear expects a single feature vector; map over quantile rows.
+        return jax.vmap(self.head)(cat)
 
     def q_values(self, obs: jnp.ndarray, key: jnp.ndarray, num_samples: int) -> jnp.ndarray:
         """Mean over τ samples → (action_dim,) expected Q."""

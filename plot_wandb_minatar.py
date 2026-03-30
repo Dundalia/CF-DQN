@@ -427,7 +427,7 @@ if __name__ == "__main__":
         experiment_tag="MinAtar_10M",
         include_pong_misc=False,
         use_run_name_for_env=True,
-        algo_tags=["MoG", "dqn", "C51", "QR-DQN", "IQN", "FQF"],
+        algo_tags=["MoG", "dqn", "C51", "QR-DQN", "IQN"],
         metric="charts/episodic_return",
         step_metric="global_step",
         out="figures/minatar_10m_episodic_return.png",

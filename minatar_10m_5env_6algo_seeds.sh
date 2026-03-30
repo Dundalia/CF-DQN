@@ -3,7 +3,7 @@
 #SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-gpu=4
 #SBATCH --ntasks=1
-#SBATCH --array=0-59%60
+#SBATCH --array=0-119%120
 #SBATCH --output=slurm/logs/%x_%A_%a.out
 #SBATCH --mem=32G
 #SBATCH --time=72:00:00
@@ -30,9 +30,11 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
 EXPERIMENT_TAG="MinAtar_10M"
 
 # Which algorithm indices to actually run (0=MoG 1=DQN 2=C51 3=QR-DQN 4=IQN 5=FQF).
-# Example — only distributional: ACTIVE_ALGOS=(3 4 5)
-# Full sweep: ACTIVE_ALGOS=(0 1 2 3 4 5)
+# We keep full arrays below intact and gate launches via skip logic.
 ACTIVE_ALGOS=(3 4 5)
+# IQN (algo 4): run on all envs.
+# QR-DQN/FQF (algos 3 and 5): run only on these env indices.
+ACTIVE_ENVS_QR_FQF=(2 3)
 
 TID="${SLURM_ARRAY_TASK_ID:?}"
 ENV_IDX=$((TID / 30))
@@ -40,12 +42,26 @@ REM=$((TID % 30))
 ALGO_IDX=$((REM / 5))
 SEED_IDX=$((REM % 5))
 
-_run=0
+_algo_enabled=0
 for _a in "${ACTIVE_ALGOS[@]}"; do
-    if [[ "${_a}" -eq "${ALGO_IDX}" ]]; then _run=1; break; fi
+    if [[ "${_a}" -eq "${ALGO_IDX}" ]]; then _algo_enabled=1; break; fi
 done
+
+_run=0
+if [[ "${_algo_enabled}" -eq 1 ]]; then
+    if [[ "${ALGO_IDX}" -eq 4 ]]; then
+        # IQN on all envs
+        _run=1
+    elif [[ "${ALGO_IDX}" -eq 3 || "${ALGO_IDX}" -eq 5 ]]; then
+        # QR-DQN/FQF only on selected envs
+        for _e in "${ACTIVE_ENVS_QR_FQF[@]}"; do
+            if [[ "${_e}" -eq "${ENV_IDX}" ]]; then _run=1; break; fi
+        done
+    fi
+fi
+
 if [[ "${_run}" -eq 0 ]]; then
-    echo "Skipping TID=${TID} (algo_idx=${ALGO_IDX} not in ACTIVE_ALGOS=${ACTIVE_ALGOS[*]})"
+    echo "Skipping TID=${TID} (env_idx=${ENV_IDX}, algo_idx=${ALGO_IDX}; ACTIVE_ALGOS=${ACTIVE_ALGOS[*]}; ACTIVE_ENVS_QR_FQF=${ACTIVE_ENVS_QR_FQF[*]})"
     exit 0
 fi
 
@@ -102,7 +118,7 @@ case "${ALGO_IDX}" in
 esac
 
 echo "=========================================="
-echo "MinAtar 10M — 4 envs × 6 algos × 5 seeds (ACTIVE_ALGOS=${ACTIVE_ALGOS[*]})"
+echo "MinAtar 10M — selective launch (IQN all envs; QR-DQN/FQF envs ${ACTIVE_ENVS_QR_FQF[*]})"
 echo "=========================================="
 echo "Task:     ${TID} (env ${ENV_IDX}, algo ${ALGO_IDX}, seed slot ${SEED_IDX})"
 echo "Env:      ${ENV_ID}"
