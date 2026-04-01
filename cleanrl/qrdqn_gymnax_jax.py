@@ -1,12 +1,12 @@
 """
-Vanilla Double DQN on gymnax environments (same stack as cvi_dqn_nocollapse_jax).
+Quantile Regression DQN (QR-DQN, Dabney et al. 2017) — Equinox + vectorised gymnax/Craftax.
 """
 import os
 import time
 from dataclasses import dataclass
+from typing import Any
 
 import equinox as eqx
-from cleanrl.craftax_env import make_env, get_obs_size, get_action_dim
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -14,101 +14,101 @@ import optax
 import tyro
 from tensorboardX import SummaryWriter
 
+from cleanrl.craftax_env import get_action_dim, get_obs_size, make_env
+
+
+def huber_loss(u: jnp.ndarray, kappa: float) -> jnp.ndarray:
+    abs_u = jnp.abs(u)
+    quad = jnp.minimum(abs_u, kappa)
+    lin = abs_u - quad
+    return 0.5 * quad**2 + kappa * lin
+
+
+def quantile_huber_loss(u: jnp.ndarray, tau: jnp.ndarray, kappa: float) -> jnp.ndarray:
+    """u: (B, N, N) pairwise TD errors; tau: (N,) quantile levels τ_i = (i+0.5)/N."""
+    indicator = (u < 0).astype(jnp.float32)
+    rho = jnp.abs(tau[None, :, None] - indicator) * huber_loss(u, kappa) / kappa
+    return jnp.mean(rho)
+
 
 @dataclass
 class Args:
     exp_name: str = os.path.basename(__file__)[: -len(".py")]
-    """the name of this experiment"""
     seed: int = 1
-    """seed of the experiment"""
     track: bool = False
-    """if toggled, this experiment will be tracked with Weights and Biases"""
     wandb_project_name: str = "cleanRL"
-    """the wandb's project name"""
     wandb_entity: str = None
-    """the entity (team) of wandb's project"""
     wandb_tags: str = ""
-    """comma-separated wandb run tags (e.g. dqn)"""
     save_model: bool = False
-    """whether to save model into the `runs/{run_name}` folder"""
 
     env_id: str = "CartPole-v1"
-    """the id of the environment (gymnax env id)"""
-    total_timesteps: int = 500000
-    """total timesteps of the experiments"""
+    total_timesteps: int = 500_000
     learning_rate: float = 2.5e-4
-    """the learning rate of the optimizer"""
     num_envs: int = 16
-    """the number of parallel game environments"""
-    buffer_size: int = 10000
-    """the replay memory buffer size"""
+    buffer_size: int = 10_000
     gamma: float = 0.99
-    """the discount factor gamma"""
     tau: float = 0.005
-    """the soft update coefficient for Polyak target network updates"""
-    target_network_frequency: int = 1000
-    """the frequency at which the target network is hard-updated (0 to disable, use Polyak only)"""
+    target_network_frequency: int = 0
     batch_size: int = 128
-    """the batch size of sample from the reply memory"""
-    start_e: float = 1
-    """the starting epsilon for exploration"""
+    start_e: float = 1.0
     end_e: float = 0.05
-    """the ending epsilon for exploration"""
     exploration_fraction: float = 0.5
-    """the fraction of `total-timesteps` it takes from start-e to go end-e"""
-    learning_starts: int = 10000
-    """timestep to start learning"""
+    learning_starts: int = 10_000
     utd_ratio: float = 0.1
-    """the update-to-data ratio (gradient steps per env step)."""
     max_grad_norm: float = 10.0
-    """the maximum gradient norm for clipping"""
-    log_interval: int = 10000
-    """log metrics every this many env steps (also the scan chunk size)"""
+    log_interval: int = 10_000
     hidden1: int = 120
-    """first hidden layer width (use 256 for Craftax)"""
     hidden2: int = 84
-    """second hidden layer width (use 256 for Craftax)"""
     hidden3: int = 0
-    """third hidden width; 0 = two-layer trunk. Use 128 with hidden1=hidden2=256 for Craftax."""
+    num_atoms: int = 200
+    """number of quantiles N"""
+    kappa: float = 1.0
+    """Huber threshold κ"""
 
 
-class QNetwork(eqx.Module):
-    """MLP trunk: obs → hidden1 → hidden2 [→ hidden3 if set] → logits."""
-
+class QRDQNNetwork(eqx.Module):
     layers: list
     out: eqx.nn.Linear
     action_dim: int = eqx.field(static=True)
+    num_atoms: int = eqx.field(static=True)
 
     def __init__(
         self,
         obs_size: int,
         action_dim: int,
+        num_atoms: int,
         *,
         key,
-        hidden1: int = 120,
-        hidden2: int = 84,
-        hidden3: int = 0,
+        hidden1: int,
+        hidden2: int,
+        hidden3: int,
     ):
-        keys = jax.random.split(key, 5)
+        keys = jax.random.split(key, 6)
         self.action_dim = action_dim
+        self.num_atoms = num_atoms
+        out_dim = action_dim * num_atoms
         if hidden3 and hidden3 > 0:
             self.layers = [
                 eqx.nn.Linear(obs_size, hidden1, key=keys[0]),
                 eqx.nn.Linear(hidden1, hidden2, key=keys[1]),
                 eqx.nn.Linear(hidden2, hidden3, key=keys[2]),
             ]
-            self.out = eqx.nn.Linear(hidden3, action_dim, key=keys[3])
+            self.out = eqx.nn.Linear(hidden3, out_dim, key=keys[3])
         else:
             self.layers = [
                 eqx.nn.Linear(obs_size, hidden1, key=keys[0]),
                 eqx.nn.Linear(hidden1, hidden2, key=keys[1]),
             ]
-            self.out = eqx.nn.Linear(hidden2, action_dim, key=keys[2])
+            self.out = eqx.nn.Linear(hidden2, out_dim, key=keys[2])
 
     def __call__(self, x):
         for layer in self.layers:
             x = jax.nn.relu(layer(x))
-        return self.out(x)
+        return self.out(x).reshape(self.action_dim, self.num_atoms)
+
+    def q_values(self, x):
+        z = self(x)
+        return jnp.mean(z, axis=-1)
 
 
 class ReplayBufferState(eqx.Module):
@@ -153,7 +153,7 @@ def rb_add_batch(rb, obs_batch, next_obs_batch, action_batch, reward_batch, done
         return rb_add(rb, obs, next_obs, action, reward, done), None
 
     rb, _ = jax.lax.scan(
-        add_one, rb, (obs_batch, next_obs_batch, action_batch, reward_batch, done_batch),
+        add_one, rb, (obs_batch, next_obs_batch, action_batch, reward_batch, done_batch)
     )
     return rb
 
@@ -199,10 +199,12 @@ def soft_update_target(q_net, target_net, tau):
     return eqx.combine(new_arrays, t_static)
 
 
-def make_train(args):
+def make_train(args: Args):
     env, env_params = make_env(args.env_id)
     obs_size = get_obs_size(env, env_params)
     action_dim = get_action_dim(env, env_params)
+    n = args.num_atoms
+    tau_levels = (jnp.arange(n, dtype=jnp.float32) + 0.5) / float(n)
 
     num_env_steps = args.total_timesteps // args.num_envs
     chunk_steps = args.log_interval // args.num_envs
@@ -224,28 +226,30 @@ def make_train(args):
     def gradient_step(q_net, target_net, opt_state, rb, key):
         key, sample_key = jax.random.split(key)
         s_obs, s_next_obs, s_actions, s_rewards, s_dones = rb_sample(rb, sample_key, args.batch_size)
+        bsz = s_obs.shape[0]
+        batch_idx = jnp.arange(bsz)
 
-        batch_size_ = s_obs.shape[0]
-        batch_idx = jnp.arange(batch_size_)
-
-        online_q_next = jax.vmap(q_net)(s_next_obs)
+        online_z_next = jax.vmap(q_net)(s_next_obs)
+        online_q_next = jnp.mean(online_z_next, axis=-1)
         next_actions = jnp.argmax(online_q_next, axis=1)
-        target_q_next = jax.vmap(target_net)(s_next_obs)
-        target_value = target_q_next[batch_idx, next_actions]
-        td_target = s_rewards + (1.0 - s_dones) * args.gamma * target_value
-        td_target = jax.lax.stop_gradient(td_target)
+        target_z_next = jax.vmap(target_net)(s_next_obs)
+        theta_t = target_z_next[batch_idx, next_actions]
+        Y = s_rewards[:, None] + args.gamma * (1.0 - s_dones[:, None]) * theta_t
+        Y = jax.lax.stop_gradient(Y)
 
         def loss_fn(net):
-            q_all = jax.vmap(net)(s_obs)
-            q_taken = q_all[batch_idx, s_actions]
-            loss = jnp.mean((q_taken - td_target) ** 2)
-            q_gap = (q_all.max(axis=1) - q_all.min(axis=1)).mean()
-            return loss, (q_taken.mean(), q_gap)
+            z_all = jax.vmap(net)(s_obs)
+            theta = z_all[batch_idx, s_actions]
+            u = Y[:, None, :] - theta[:, :, None]
+            loss = quantile_huber_loss(u, tau_levels, args.kappa)
+            q_mean = jnp.mean(theta)
+            z_means = jnp.mean(z_all, axis=-1)
+            q_gap = (z_means.max(axis=1) - z_means.min(axis=1)).mean()
+            return loss, (q_mean, q_gap)
 
         (loss, (q_mean, q_gap)), grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(q_net)
         updates, new_opt_state = optimizer.update(grads, opt_state, eqx.filter(q_net, eqx.is_array))
         new_q_net = eqx.apply_updates(q_net, updates)
-
         return new_q_net, new_opt_state, key, loss, q_mean, q_gap
 
     def train_step(runner_state, unused):
@@ -255,20 +259,19 @@ def make_train(args):
         key, action_key, eps_key = jax.random.split(key, 3)
         epsilon = linear_schedule(global_step)
 
-        q_values = jax.vmap(q_net)(obs)
+        z_vals = jax.vmap(q_net)(obs)
+        q_values = jnp.mean(z_vals, axis=-1)
         greedy_actions = jnp.argmax(q_values, axis=1)
-
         random_actions = jax.random.randint(action_key, (args.num_envs,), 0, action_dim)
         use_random = jax.random.uniform(eps_key, (args.num_envs,)) < epsilon
         actions = jnp.where(use_random, random_actions, greedy_actions)
 
         key, step_key = jax.random.split(key)
         step_keys = jax.random.split(step_key, args.num_envs)
-        next_obs, env_states, rewards, dones, infos = v_step(step_keys, env_states, actions, env_params)
+        next_obs, env_states, rewards, dones, _ = v_step(step_keys, env_states, actions, env_params)
         next_obs = next_obs.reshape(args.num_envs, -1)
 
         ep_stats = update_episode_stats(ep_stats, rewards, dones)
-
         rb = rb_add_batch(rb, obs, next_obs, actions, rewards, dones.astype(jnp.float32))
 
         is_training = global_step > args.learning_starts
@@ -301,17 +304,14 @@ def make_train(args):
 
         def skip_train(operand):
             q_n, target_n, opt_s, _rb, key_ = operand
-            return q_n, target_n, opt_s, key_, jnp.float32(0.0), jnp.float32(0.0), jnp.float32(0.0)
+            z = jnp.float32(0.0)
+            return q_n, target_n, opt_s, key_, z, z, z
 
         q_net, target_net, opt_state, key, mean_loss, mean_q, mean_q_gap = jax.lax.cond(
-            is_training,
-            do_train,
-            skip_train,
-            (q_net, target_net, opt_state, rb, key),
+            is_training, do_train, skip_train, (q_net, target_net, opt_state, rb, key)
         )
 
         new_runner_state = (q_net, target_net, opt_state, rb, next_obs, env_states, ep_stats, key, step_count + 1)
-
         metrics = {
             "loss": mean_loss,
             "q_values": mean_q,
@@ -330,30 +330,18 @@ def make_train(args):
 
     def init_runner_state(key):
         key, q_key = jax.random.split(key)
-        q_net = QNetwork(
-            obs_size,
-            action_dim,
-            key=q_key,
-            hidden1=args.hidden1,
-            hidden2=args.hidden2,
-            hidden3=args.hidden3,
+        q_net = QRDQNNetwork(
+            obs_size, action_dim, n, key=q_key, hidden1=args.hidden1, hidden2=args.hidden2, hidden3=args.hidden3
         )
-        target_net = QNetwork(
-            obs_size,
-            action_dim,
-            key=q_key,
-            hidden1=args.hidden1,
-            hidden2=args.hidden2,
-            hidden3=args.hidden3,
+        target_net = QRDQNNetwork(
+            obs_size, action_dim, n, key=q_key, hidden1=args.hidden1, hidden2=args.hidden2, hidden3=args.hidden3
         )
         opt_state = optimizer.init(eqx.filter(q_net, eqx.is_array))
         rb = ReplayBufferState.create(args.buffer_size, obs_size)
-
         key, *env_keys = jax.random.split(key, args.num_envs + 1)
         obs, env_states = v_reset(jnp.stack(env_keys), env_params)
         obs = obs.reshape(args.num_envs, -1)
         ep_stats = EpisodeStats.create(args.num_envs)
-
         return (q_net, target_net, opt_state, rb, obs, env_states, ep_stats, key, jnp.int32(0))
 
     return train_chunk, init_runner_state, num_chunks, chunk_steps
@@ -368,7 +356,7 @@ if __name__ == "__main__":
         import wandb
 
         _tags = [t.strip() for t in args.wandb_tags.split(",") if t.strip()]
-        _wb = dict(
+        _wb: dict[str, Any] = dict(
             project=args.wandb_project_name,
             entity=args.wandb_entity,
             sync_tensorboard=True,
@@ -396,9 +384,8 @@ if __name__ == "__main__":
     episode_count = 0
     recent_returns = []
 
-    for chunk in range(num_chunks):
+    for _ in range(num_chunks):
         runner_state, metrics = train_chunk(runner_state)
-
         dones = jax.device_get(metrics["dones"])
         returns = jax.device_get(metrics["returned_episode_returns"])
         lengths = jax.device_get(metrics["returned_episode_lengths"])
@@ -417,7 +404,6 @@ if __name__ == "__main__":
                     recent_returns.append(ep_return)
                     if len(recent_returns) > 500:
                         recent_returns = recent_returns[-500:]
-
                     last_logged_step = int(global_steps[t])
                     writer.add_scalar("charts/episodic_return", ep_return, last_logged_step)
                     writer.add_scalar("charts/episodic_length", ep_length, last_logged_step)
@@ -430,13 +416,11 @@ if __name__ == "__main__":
         last_eps = float(epsilons[-1])
         sps = int(last_step / (time.time() - start_time)) if last_step > 0 else 0
         avg_return = float(np.mean(recent_returns)) if recent_returns else 0.0
-
         print(
             f"step={last_step:>7d} | episodes={episode_count:>5d} | "
             f"avg_return={avg_return:>7.2f} | loss={last_loss:.4f} | q_gap={last_q_gap:.4f} | "
             f"eps={last_eps:.3f} | SPS={sps}"
         )
-
         writer.add_scalar("charts/moving_avg_return", avg_return, last_step)
         writer.add_scalar("charts/SPS", sps, last_step)
         writer.add_scalar("charts/epsilon", last_eps, last_step)

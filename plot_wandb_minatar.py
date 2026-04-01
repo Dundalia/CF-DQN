@@ -28,6 +28,23 @@ try:
 except ImportError as e:
     raise SystemExit("Please install wandb: pip install wandb") from e
 
+ALGO_COLORS: dict[str, str] = {
+    # Hard-coded 4-model palette requested for benchmark figures.
+    "MoG": "#2077b4",  # mid blue
+    "dqn": "#2ca02c",  # green
+    "QR-DQN": "#e477c2",  # pink
+    "IQN": "#15becf",  # light blue
+    
+    # Fallback colors for any additional algos.
+    "C51": "#FF8C42",
+    "FQF": "#8A6AE2",
+    "FFT": "#9A9A9A",
+}
+
+
+def _algo_colors(algo_tags: list[str]) -> list[str]:
+    return [ALGO_COLORS.get(tag, "#444444") for tag in algo_tags]
+
 
 def _wandb_path(entity: str | None, project: str) -> str:
     if entity:
@@ -148,7 +165,7 @@ def _draw_algo_curves_on_ax(
     ax,
     by_algo: dict[str, list],
     algo_tags: list[str],
-    colors: np.ndarray,
+    colors: list[str],
     *,
     grid_points: int,
     smooth_window: int,
@@ -173,17 +190,31 @@ def _draw_algo_curves_on_ax(
             continue
         grid = np.linspace(s_min, s_max, grid_points)
         mat = _interp_on_grid(curves, grid)
+        n_per_step = np.sum(np.isfinite(mat), axis=0)
+        std_valid = n_per_step >= 2
         mean = np.nanmean(mat, axis=0)
         std = np.nanstd(mat, axis=0)
+        std[~std_valid] = np.nan
         if smooth_window and smooth_window > 1:
             mean = _smooth_1d(mean, smooth_window)
             std = _smooth_1d(std, smooth_window)
+            # Keep variance hidden where fewer than 2 runs contribute, even after smoothing.
+            std[~std_valid] = np.nan
         upper = mean + std
         lower = mean - std
         ymax_track = max(ymax_track, float(np.nanmax(upper)))
         ymin_track = min(ymin_track, float(np.nanmin(lower)))
 
-        label = "DQN" if algo_tag == "dqn" else algo_tag
+        label_map = {
+            "dqn": "DQN",
+            "C51": "C51",
+            "MoG": "MoG",
+            "FFT": "FFT",
+            "QR-DQN": "QR-DQN",
+            "IQN": "IQN",
+            "FQF": "FQF",
+        }
+        label = label_map.get(algo_tag, algo_tag)
         c = colors[idx % len(colors)]
         ax.plot(grid, mean, color=c, linewidth=2.0, label=f"{label} (n={len(curves)})")
         ax.fill_between(grid, lower, upper, color=c, alpha=0.2)
@@ -238,7 +269,7 @@ def plot_episodic_return(
     if required_tag is None:
         required_tag = []
     if algo_tags is None:
-        algo_tags = ["MoG", "FFT", "dqn"]
+        algo_tags = ["MoG", "dqn", "C51", "QR-DQN", "IQN", "FQF"]
 
     required_effective = list(required_tag)
     if experiment_tag:
@@ -248,7 +279,7 @@ def plot_episodic_return(
     path = _wandb_path(entity, project)
     runs = list(api.runs(path, order="-created_at"))[:max_runs]
 
-    colors = plt.cm.tab10(np.linspace(0, 0.9, max(len(algo_tags), 1)))
+    colors = _algo_colors(algo_tags)
     metric_title = _pretty_metric_label(metric)
 
     os.makedirs(os.path.dirname(os.path.abspath(out)) or ".", exist_ok=True)
@@ -410,7 +441,7 @@ if __name__ == "__main__":
     #     env_name="Breakout MinAtar",
     # )
 
-    # (2) MinAtar 10M — one figure, one panel per game; tags: MinAtar_10M + MoG|FFT|dqn.
+    # (2) MinAtar 10M — one panel per game; tags: MinAtar_10M + MoG|dqn|C51|QR-DQN|IQN|FQF.
     #     Set include_pong_misc=True to add the Pong-misc panel (5 columns); default is 4 MinAtar games only.
     plot_minatar_10m_grid(
         project="Deep-CVI-Experiments",
@@ -418,6 +449,7 @@ if __name__ == "__main__":
         experiment_tag="MinAtar_10M",
         include_pong_misc=False,
         use_run_name_for_env=True,
+        algo_tags=["MoG", "dqn", "C51", "QR-DQN", "IQN"],
         metric="charts/episodic_return",
         step_metric="global_step",
         out="figures/minatar_10m_episodic_return.png",

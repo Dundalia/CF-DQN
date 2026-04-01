@@ -1,197 +1,154 @@
+"""
+Implicit Quantile Networks (IQN, Dabney et al. 2018) — Equinox + vectorised gymnax/Craftax.
+"""
 import os
 import time
 from dataclasses import dataclass
-from functools import partial
 from typing import Any
 
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
-import equinox as eqx
-from cleanrl.craftax_env import make_env, get_obs_size, get_action_dim
 import tyro
 from tensorboardX import SummaryWriter
 
-from cleanrl.cvi_utils_nocollapse_jax import (
-    build_mog_cf,
-    mog_q_values,
-    sample_frequencies,
-)
+from cleanrl.craftax_env import get_action_dim, get_obs_size, make_env
+
+
+def huber_loss(u: jnp.ndarray, kappa: float) -> jnp.ndarray:
+    abs_u = jnp.abs(u)
+    quad = jnp.minimum(abs_u, kappa)
+    lin = abs_u - quad
+    return 0.5 * quad**2 + kappa * lin
+
+
+def quantile_huber_loss_iqn(u: jnp.ndarray, tau_i: jnp.ndarray, kappa: float) -> jnp.ndarray:
+    """u: (B, N_tau, N_tau_p); tau_i: (N_tau,) sampled τ for current quantiles."""
+    indicator = (u < 0).astype(jnp.float32)
+    rho = jnp.abs(tau_i[None, :, None] - indicator) * huber_loss(u, kappa) / kappa
+    return jnp.mean(rho)
 
 
 @dataclass
 class Args:
     exp_name: str = os.path.basename(__file__)[: -len(".py")]
-    """the name of this experiment"""
     seed: int = 1
-    """seed of the experiment"""
     track: bool = False
-    """if toggled, this experiment will be tracked with Weights and Biases"""
     wandb_project_name: str = "cleanRL"
-    """the wandb's project name"""
     wandb_entity: str = None
-    """the entity (team) of wandb's project"""
-    save_model: bool = False
-    """whether to save model into the `runs/{run_name}` folder"""
     wandb_tags: str = ""
-    """comma-separated wandb run tags (e.g. MoG)"""
+    save_model: bool = False
 
-    # Algorithm specific arguments
     env_id: str = "CartPole-v1"
-    """the id of the environment (gymnax env id)"""
-    total_timesteps: int = 500000
-    """total timesteps of the experiments"""
+    total_timesteps: int = 500_000
     learning_rate: float = 2.5e-4
-    """the learning rate of the optimizer"""
     num_envs: int = 16
-    """the number of parallel game environments"""
-    num_omega_samples: int = 32
-    """number of frequencies to sample per gradient step"""
-    omega_max: float = 1.0
-    """max frequency for sampling range (0, omega_max]"""
-    num_components: int = 8
-    """number of Gaussian mixture components per action"""
-    buffer_size: int = 10000
-    """the replay memory buffer size"""
+    buffer_size: int = 10_000
     gamma: float = 0.99
-    """the discount factor gamma"""
     tau: float = 0.005
-    """the soft update coefficient for Polyak target network updates"""
-    target_network_frequency: int = 1000
-    """the frequency at which the target network is hard-updated (0 to disable, use Polyak only)"""
+    target_network_frequency: int = 0
     batch_size: int = 128
-    """the batch size of sample from the reply memory"""
-    start_e: float = 1
-    """the starting epsilon for exploration"""
+    start_e: float = 1.0
     end_e: float = 0.05
-    """the ending epsilon for exploration"""
     exploration_fraction: float = 0.5
-    """the fraction of `total-timesteps` it takes from start-e to go end-e"""
-    learning_starts: int = 10000
-    """timestep to start learning"""
+    learning_starts: int = 10_000
     utd_ratio: float = 0.1
-    """the update-to-data ratio (gradient steps per env step)."""
     max_grad_norm: float = 10.0
-    """the maximum gradient norm for clipping"""
-    log_interval: int = 10000
-    """log metrics every this many env steps (also the scan chunk size)"""
+    log_interval: int = 10_000
     hidden1: int = 120
-    """first hidden layer width (use 256 for Craftax)"""
     hidden2: int = 84
-    """second hidden layer width (use 256 for Craftax)"""
     hidden3: int = 0
-    """third hidden width; 0 = two-layer trunk. Use 128 with hidden1=hidden2=256 for Craftax."""
+    n_cos: int = 64
+    """number of cosine basis terms π i τ"""
+    quantile_embedding_dim: int = 64
+    num_tau_samples: int = 32
+    """K_τ for training (online)"""
+    num_tau_prime_samples: int = 32
+    """K_τ' for target"""
+    num_quantile_samples: int = 32
+    """K for inference Q = mean over samples"""
+    kappa: float = 1.0
 
 
-class CF_QNetwork(eqx.Module):
-    """
-    Mixture-of-Gaussians Characteristic Function Q-Network.
+class IQNNetwork(eqx.Module):
+    """State trunk + τ embedding; concat(h, φ(τ)) → per-action quantile values."""
 
-    Outputs (π, μ, σ) per action × M components, all pure functions of state.
-    The CF is computed analytically:
-      φ(ω) = Σ_k π_k · exp(i·ω·μ_k − ½·ω²·σ²_k)
-
-    Properties (by construction):
-      - φ(0) = 1 (valid CF)
-      - |φ(ω)| ≤ 1 (valid CF)
-      - Bellman closure: MoG target stays MoG after reward shift + discounting
-      - Q(s,a) = Σ_k π_k · μ_k (closed form, no IFFT needed)
-    """
-
-    #* State encoder
-    state_layers: list
-
-    #* Three heads — all functions of state only, NOT ω
-    pi_head: eqx.nn.Linear     # mixture weights (→ softmax)
-    mu_head: eqx.nn.Linear     # component means (→ unbounded)
-    sigma_head: eqx.nn.Linear  # component std devs (→ softplus)
-
+    layers: list
+    embed_w: eqx.nn.Linear
+    head: eqx.nn.Linear
     action_dim: int = eqx.field(static=True)
-    num_components: int = eqx.field(static=True)
-    hidden_dim: int = eqx.field(static=True)
+    n_cos: int = eqx.field(static=True)
+    quantile_embedding_dim: int = eqx.field(static=True)
 
     def __init__(
         self,
         obs_size: int,
         action_dim: int,
-        num_components: int = 8,
         *,
         key,
-        hidden1: int = 120,
-        hidden2: int = 84,
-        hidden3: int = 0,
+        hidden1: int,
+        hidden2: int,
+        hidden3: int,
+        n_cos: int,
+        quantile_embedding_dim: int,
     ):
-        keys = jax.random.split(key, 7)
+        keys = jax.random.split(key, 8)
         self.action_dim = action_dim
-        self.num_components = num_components
-
+        self.n_cos = n_cos
+        self.quantile_embedding_dim = quantile_embedding_dim
         if hidden3 and hidden3 > 0:
-            self.hidden_dim = hidden3
-            self.state_layers = [
+            h_out = hidden3
+            self.layers = [
                 eqx.nn.Linear(obs_size, hidden1, key=keys[0]),
                 eqx.nn.Linear(hidden1, hidden2, key=keys[1]),
                 eqx.nn.Linear(hidden2, hidden3, key=keys[2]),
             ]
-            head_key_i = 3
         else:
-            self.hidden_dim = hidden2
-            self.state_layers = [
+            h_out = hidden2
+            self.layers = [
                 eqx.nn.Linear(obs_size, hidden1, key=keys[0]),
                 eqx.nn.Linear(hidden1, hidden2, key=keys[1]),
             ]
-            head_key_i = 2
+        self.embed_w = eqx.nn.Linear(n_cos, quantile_embedding_dim, key=keys[3])
+        self.head = eqx.nn.Linear(h_out + quantile_embedding_dim, action_dim, key=keys[4])
 
-        out_size = action_dim * num_components
-        h = self.hidden_dim
-        self.pi_head = eqx.nn.Linear(h, out_size, key=keys[head_key_i])
-        self.mu_head = eqx.nn.Linear(h, out_size, key=keys[head_key_i + 1])
-        self.sigma_head = eqx.nn.Linear(h, out_size, key=keys[head_key_i + 2])
+    def _trunk(self, x):
+        for layer in self.layers:
+            x = jax.nn.relu(layer(x))
+        return x
 
-    def __call__(self, x):
-        """
-        Forward pass for a single state.
+    def _tau_embed(self, tau: jnp.ndarray) -> jnp.ndarray:
+        """tau: (K,) in (0,1) → (K, E)"""
 
-        Args:
-            x: (obs_dim,) state observation.
+        def one(t: jnp.ndarray) -> jnp.ndarray:
+            i = jnp.arange(1, self.n_cos + 1, dtype=jnp.float32)
+            cosf = jnp.cos(jnp.pi * i * t)
+            return jax.nn.relu(self.embed_w(cosf))
 
-        Returns:
-            pi:    (action_dim, M) mixture weights (sum to 1 over M).
-            mu:    (action_dim, M) component means.
-            sigma: (action_dim, M) component std devs (positive).
-        """
-        #* State encoding
-        h = x
-        for layer in self.state_layers:
-            h = jax.nn.relu(layer(h))  # (hidden,)
+        tau = jnp.atleast_1d(tau)
+        return jax.vmap(one)(tau)
 
-        M = self.num_components
-        A = self.action_dim
+    def __call__(self, obs: jnp.ndarray, tau: jnp.ndarray) -> jnp.ndarray:
+        """obs (obs_dim,), tau (K,) → (K, action_dim) quantile values."""
+        h = self._trunk(obs)
+        emb = self._tau_embed(tau)
+        k = tau.shape[0]
+        h_exp = jnp.broadcast_to(h, (k, h.shape[0]))
+        cat = jnp.concatenate([h_exp, emb], axis=-1)
+        # eqx.nn.Linear expects a single feature vector; map over quantile rows.
+        return jax.vmap(self.head)(cat)
 
-        #* π: softmax over components → valid mixture weights
-        pi_logits = self.pi_head(h).reshape(A, M)
-        pi = jax.nn.softmax(pi_logits, axis=-1)  # (action_dim, M)
-
-        #* μ: unbounded means
-        mu = self.mu_head(h).reshape(A, M)        # (action_dim, M)
-
-        #* σ: positive std devs via softplus
-        sigma = jax.nn.softplus(self.sigma_head(h).reshape(A, M))  # (action_dim, M)
-
-        return pi, mu, sigma
-
-    def q_values(self, x):
-        """
-        Extract Q-values: Q(s, a) = Σ_k π_k · μ_k.
-
-        Closed form — no ω evaluation, no IFFT, no grid.
-        """
-        pi, mu, _ = self(x)
-        return mog_q_values(pi, mu)  # (action_dim,)
+    def q_values(self, obs: jnp.ndarray, key: jnp.ndarray, num_samples: int) -> jnp.ndarray:
+        """Mean over τ samples → (action_dim,) expected Q."""
+        key, k2 = jax.random.split(key)
+        tau = jax.random.uniform(k2, (num_samples,))
+        z = self(obs, tau)
+        return jnp.mean(z, axis=0)
 
 
 class ReplayBufferState(eqx.Module):
-    """Pure-JAX replay buffer stored as a PyTree."""
     obs: jnp.ndarray
     next_obs: jnp.ndarray
     actions: jnp.ndarray
@@ -231,8 +188,9 @@ def rb_add_batch(rb, obs_batch, next_obs_batch, action_batch, reward_batch, done
     def add_one(rb, transition):
         obs, next_obs, action, reward, done = transition
         return rb_add(rb, obs, next_obs, action, reward, done), None
+
     rb, _ = jax.lax.scan(
-        add_one, rb, (obs_batch, next_obs_batch, action_batch, reward_batch, done_batch),
+        add_one, rb, (obs_batch, next_obs_batch, action_batch, reward_batch, done_batch)
     )
     return rb
 
@@ -278,26 +236,21 @@ def soft_update_target(q_net, target_net, tau):
     return eqx.combine(new_arrays, t_static)
 
 
-def make_train(args):
-
-    #* Environment
+def make_train(args: Args):
     env, env_params = make_env(args.env_id)
     obs_size = get_obs_size(env, env_params)
     action_dim = get_action_dim(env, env_params)
 
-    #* Precompute training schedule
     num_env_steps = args.total_timesteps // args.num_envs
     chunk_steps = args.log_interval // args.num_envs
     num_chunks = num_env_steps // chunk_steps
     updates_per_step = max(1, round(args.num_envs * args.utd_ratio))
 
-    #* Optimizer
     optimizer = optax.chain(
         optax.clip_by_global_norm(args.max_grad_norm),
         optax.adam(learning_rate=args.learning_rate, eps=0.01 / args.batch_size),
     )
 
-    #* Vmapped env functions
     v_reset = jax.vmap(env.reset, in_axes=(0, None))
     v_step = jax.vmap(env.step, in_axes=(0, 0, 0, None))
 
@@ -305,120 +258,71 @@ def make_train(args):
         slope = (args.end_e - args.start_e) / (args.exploration_fraction * args.total_timesteps)
         return jnp.maximum(slope * t + args.start_e, args.end_e)
 
+    k_tau = args.num_tau_samples
+    k_tau_p = args.num_tau_prime_samples
+
     def gradient_step(q_net, target_net, opt_state, rb, key):
-        key, sample_key, omega_key = jax.random.split(key, 3)
+        key, sample_key, tau_key, taup_key = jax.random.split(key, 4)
         s_obs, s_next_obs, s_actions, s_rewards, s_dones = rb_sample(rb, sample_key, args.batch_size)
+        bsz = s_obs.shape[0]
+        batch_idx = jnp.arange(bsz)
 
-        batch_size = s_obs.shape[0]
-        batch_idx = jnp.arange(batch_size)
+        tau_online = jax.random.uniform(tau_key, (k_tau,))
+        tau_prime = jax.random.uniform(taup_key, (k_tau_p,))
 
-        #* Sample positive frequencies (half-Laplacian, conjugate symmetry)
-        omegas = sample_frequencies(omega_key, args.num_omega_samples, args.omega_max)  # (N,)
-        N = args.num_omega_samples
+        def q_mean_online(net, obs, taus):
+            z = jax.vmap(lambda o: jnp.mean(net(o, taus), axis=0))(obs)
+            return z
 
-        #* 1. Action selection via Double DQN: online net SELECTS via Q = Σ π_k μ_k
-        online_q_next = jax.vmap(q_net.q_values)(s_next_obs)  # (B, action_dim)
-        next_actions = jnp.argmax(online_q_next, axis=1)       # (B,)
+        def z_sa(net, obs, actions, tau):
+            def one(o, a):
+                z_all = net(o, tau)
+                return z_all[:, a]
 
-        #* 2. Evaluate target net → get MoG parameters for next states
-        target_pi, target_mu, target_sigma = jax.vmap(target_net)(s_next_obs)
-        # Each: (B, action_dim, M)
-
-        #* 3. Select MoG params for the greedy action
-        target_pi_sel = target_pi[batch_idx, next_actions]       # (B, M)
-        target_mu_sel = target_mu[batch_idx, next_actions]       # (B, M)
-        target_sigma_sel = target_sigma[batch_idx, next_actions] # (B, M)
-
-        #* 4. Bellman target in MoG-CF space (closure property):
-        #*    φ_target(ω) = e^{iωr} · φ(s', γω)
-        #*    For MoG: shifted means r + γ·μ_k, scaled sigmas γ·σ_k
-        gammas = args.gamma * (1 - s_dones)  # (B,)
-
-        #*    Build target CF directly from MoG math:
-        #*    Σ_k π_k exp(iω(r + γμ_k) − ½ω²(γσ_k)²)
-        bellman_mu = s_rewards[:, None] + gammas[:, None] * target_mu_sel       # (B, M)
-        bellman_sigma = gammas[:, None] * target_sigma_sel                       # (B, M)
-        bellman_pi = target_pi_sel                                               # (B, M)
-
-        #* Evaluate target MoG CF at sampled omegas
-        #* Need shapes: pi (B, 1, M), omegas (N,) → build_mog_cf expects (B, action_dim=1, M)
-        td_target = build_mog_cf(
-            bellman_pi[:, None, :],     # (B, 1, M)
-            bellman_mu[:, None, :],     # (B, 1, M)
-            bellman_sigma[:, None, :],  # (B, 1, M)
-            omegas,                     # (N,)
-        )  # (B, N, 1)
-        td_target = td_target[:, :, 0]  # (B, N) — squeeze the dummy action dim
-        td_target = jax.lax.stop_gradient(td_target)
+            return jax.vmap(one)(obs, actions)
 
         def loss_fn(net):
-            #* Evaluate online net → MoG params for current states
-            online_pi, online_mu, online_sigma = jax.vmap(net)(s_obs)
-            # Each: (B, action_dim, M)
+            online_q_next = q_mean_online(net, s_next_obs, tau_online)
+            next_actions = jnp.argmax(online_q_next, axis=1)
+            theta = z_sa(net, s_obs, s_actions, tau_online)
+            theta_t = z_sa(target_net, s_next_obs, next_actions, tau_prime)
+            Y = s_rewards[:, None] + args.gamma * (1.0 - s_dones[:, None]) * theta_t
+            Y = jax.lax.stop_gradient(Y)
+            u = Y[:, None, :] - theta[:, :, None]
+            loss = quantile_huber_loss_iqn(u, tau_online, args.kappa)
+            z_all = jax.vmap(lambda o: net(o, tau_online))(s_obs)
+            z_m = jnp.mean(z_all, axis=1)
+            q_mean = z_m[batch_idx, s_actions].mean()
+            q_gap = (z_m.max(axis=1) - z_m.min(axis=1)).mean()
+            return loss, (q_mean, q_gap)
 
-            #* Build online CF for ALL actions at sampled omegas
-            online_phi = build_mog_cf(online_pi, online_mu, online_sigma, omegas)
-            # (B, N, action_dim)
-
-            #* Select CF for the taken action
-            online_phi_selected = online_phi[batch_idx, :, s_actions]  # (B, N)
-
-            #* MSE loss in complex domain (no explicit frequency weighting —
-            #* half-Laplacian sampling already provides low-freq emphasis)
-            loss = jnp.mean(jnp.abs(online_phi_selected - td_target) ** 2)
-
-            residual = online_phi_selected - td_target
-            cf_loss_imag = jnp.mean(jnp.abs(jnp.imag(residual)))
-
-            #* Q-values for logging (closed form)
-            q_all = mog_q_values(online_pi, online_mu)  # (B, action_dim)
-            q_mean = q_all[batch_idx, s_actions].mean()
-            q_gap = (q_all.max(axis=1) - q_all.min(axis=1)).mean()
-
-            #* MoG distributional health metrics
-            #* H(pi): entropy of mixture weights — high means components equally used
-            mog_entropy = -jnp.sum(online_pi * jnp.log(online_pi + 1e-8), axis=-1).mean()
-            #* sigma_mean: avg spread of Gaussian components
-            sigma_mean = online_sigma.mean()
-
-            return loss, (q_mean, q_gap, mog_entropy, sigma_mean, cf_loss_imag)
-
-        (loss, (q_mean, q_gap, mog_entropy, sigma_mean, cf_loss_imag)), grads = eqx.filter_value_and_grad(
-            loss_fn, has_aux=True
-        )(q_net)
+        (loss, (q_mean, q_gap)), grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(q_net)
         updates, new_opt_state = optimizer.update(grads, opt_state, eqx.filter(q_net, eqx.is_array))
         new_q_net = eqx.apply_updates(q_net, updates)
-
-        return new_q_net, new_opt_state, key, loss, q_mean, q_gap, mog_entropy, sigma_mean, cf_loss_imag
+        return new_q_net, new_opt_state, key, loss, q_mean, q_gap
 
     def train_step(runner_state, unused):
         q_net, target_net, opt_state, rb, obs, env_states, ep_stats, key, step_count = runner_state
         global_step = step_count * args.num_envs
 
-        #* Epsilon-greedy action selection via Q = Σ π_k μ_k (closed form)
-        key, action_key, eps_key = jax.random.split(key, 3)
+        key, action_key, eps_key, infer_key = jax.random.split(key, 4)
         epsilon = linear_schedule(global_step)
 
-        q_values = jax.vmap(q_net.q_values)(obs)              # (num_envs, action_dim)
+        infer_keys = jax.random.split(infer_key, args.num_envs)
+        q_values = jax.vmap(lambda o, k: q_net.q_values(o, k, args.num_quantile_samples))(obs, infer_keys)
         greedy_actions = jnp.argmax(q_values, axis=1)
-
         random_actions = jax.random.randint(action_key, (args.num_envs,), 0, action_dim)
         use_random = jax.random.uniform(eps_key, (args.num_envs,)) < epsilon
         actions = jnp.where(use_random, random_actions, greedy_actions)
 
-        #* Env step (vmapped)
         key, step_key = jax.random.split(key)
         step_keys = jax.random.split(step_key, args.num_envs)
-        next_obs, env_states, rewards, dones, infos = v_step(step_keys, env_states, actions, env_params)
+        next_obs, env_states, rewards, dones, _ = v_step(step_keys, env_states, actions, env_params)
         next_obs = next_obs.reshape(args.num_envs, -1)
 
-        #* Episode stats
         ep_stats = update_episode_stats(ep_stats, rewards, dones)
-
-        #* Replay buffer
         rb = rb_add_batch(rb, obs, next_obs, actions, rewards, dones.astype(jnp.float32))
 
-        #* Conditional training
         is_training = global_step > args.learning_starts
 
         def do_train(operand):
@@ -426,18 +330,15 @@ def make_train(args):
 
             def scan_grad(carry, _unused):
                 q_n_, opt_s_, key_ = carry
-                q_n_, opt_s_, key_, loss, q_mean, q_gap, mog_ent, sig_m, cf_im = gradient_step(
-                    q_n_, target_n, opt_s_, rb_, key_
-                )
-                return (q_n_, opt_s_, key_), (loss, q_mean, q_gap, mog_ent, sig_m, cf_im)
+                q_n_, opt_s_, key_, loss, q_mean, q_gap = gradient_step(q_n_, target_n, opt_s_, rb_, key_)
+                return (q_n_, opt_s_, key_), (loss, q_mean, q_gap)
 
-            (q_n, opt_s, key_), (losses, q_means, q_gaps, mog_ents, sig_ms, cf_ims) = jax.lax.scan(
+            (q_n, opt_s, key_), (losses, q_means, q_gaps) = jax.lax.scan(
                 scan_grad, (q_n, opt_s, key_), None, length=updates_per_step
             )
 
-            #* Target network update
             if args.target_network_frequency > 0:
-                should_update = (global_step % args.target_network_frequency == 0)
+                should_update = global_step % args.target_network_frequency == 0
                 target_n = jax.lax.cond(
                     should_update,
                     lambda pair: pair[0],
@@ -448,42 +349,22 @@ def make_train(args):
                 effective_tau = min(args.tau * args.num_envs, 1.0)
                 target_n = soft_update_target(q_n, target_n, effective_tau)
 
-            return (
-                q_n,
-                target_n,
-                opt_s,
-                key_,
-                losses.mean(),
-                q_means.mean(),
-                q_gaps.mean(),
-                mog_ents.mean(),
-                sig_ms.mean(),
-                cf_ims.mean(),
-            )
+            return q_n, target_n, opt_s, key_, losses.mean(), q_means.mean(), q_gaps.mean()
 
         def skip_train(operand):
             q_n, target_n, opt_s, _rb, key_ = operand
             z = jnp.float32(0.0)
-            return q_n, target_n, opt_s, key_, z, z, z, z, z, z
+            return q_n, target_n, opt_s, key_, z, z, z
 
-        q_net, target_net, opt_state, key, mean_loss, mean_q, mean_q_gap, mean_entropy, mean_sigma, mean_cf_imag = (
-            jax.lax.cond(
-                is_training,
-                do_train,
-                skip_train,
-                (q_net, target_net, opt_state, rb, key),
-            )
+        q_net, target_net, opt_state, key, mean_loss, mean_q, mean_q_gap = jax.lax.cond(
+            is_training, do_train, skip_train, (q_net, target_net, opt_state, rb, key)
         )
 
         new_runner_state = (q_net, target_net, opt_state, rb, next_obs, env_states, ep_stats, key, step_count + 1)
-
         metrics = {
             "loss": mean_loss,
             "q_values": mean_q,
             "q_gap": mean_q_gap,
-            "mog_entropy": mean_entropy,
-            "sigma_mean": mean_sigma,
-            "cf_loss_imag": mean_cf_imag,
             "epsilon": epsilon,
             "returned_episode_returns": ep_stats.returned_episode_returns,
             "returned_episode_lengths": ep_stats.returned_episode_lengths,
@@ -494,56 +375,58 @@ def make_train(args):
 
     @eqx.filter_jit
     def train_chunk(runner_state):
-        """Run chunk_steps env iterations purely in JAX, return state + metrics."""
         return jax.lax.scan(train_step, runner_state, None, length=chunk_steps)
 
     def init_runner_state(key):
         key, q_key = jax.random.split(key)
-        q_net = CF_QNetwork(
+        q_net = IQNNetwork(
             obs_size,
             action_dim,
-            args.num_components,
             key=q_key,
             hidden1=args.hidden1,
             hidden2=args.hidden2,
             hidden3=args.hidden3,
+            n_cos=args.n_cos,
+            quantile_embedding_dim=args.quantile_embedding_dim,
         )
-        target_net = CF_QNetwork(
+        target_net = IQNNetwork(
             obs_size,
             action_dim,
-            args.num_components,
             key=q_key,
             hidden1=args.hidden1,
             hidden2=args.hidden2,
             hidden3=args.hidden3,
+            n_cos=args.n_cos,
+            quantile_embedding_dim=args.quantile_embedding_dim,
         )
         opt_state = optimizer.init(eqx.filter(q_net, eqx.is_array))
         rb = ReplayBufferState.create(args.buffer_size, obs_size)
-
         key, *env_keys = jax.random.split(key, args.num_envs + 1)
         obs, env_states = v_reset(jnp.stack(env_keys), env_params)
         obs = obs.reshape(args.num_envs, -1)
         ep_stats = EpisodeStats.create(args.num_envs)
-
         return (q_net, target_net, opt_state, rb, obs, env_states, ep_stats, key, jnp.int32(0))
 
     return train_chunk, init_runner_state, num_chunks, chunk_steps
 
+
 if __name__ == "__main__":
-    current_time = time.strftime('%Y-%m-%d_%H-%M-%S')
+    current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
     args = tyro.cli(Args)
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
 
     if args.track:
         import wandb
+
         _tags = [t.strip() for t in args.wandb_tags.split(",") if t.strip()]
-        _wb = dict[str, str | bool | dict[str, Any]](
+        _wb: dict[str, Any] = dict(
             project=args.wandb_project_name,
-            entity=args.wandb_entity,   
+            entity=args.wandb_entity,
             sync_tensorboard=True,
             config=vars(args),
             name=run_name,
-            save_code=True,)
+            save_code=True,
+        )
         if _tags:
             _wb["tags"] = _tags
         wandb.init(**_wb)
@@ -564,10 +447,8 @@ if __name__ == "__main__":
     episode_count = 0
     recent_returns = []
 
-    for chunk in range(num_chunks):
+    for _ in range(num_chunks):
         runner_state, metrics = train_chunk(runner_state)
-
-        #* Python-side: extract metrics and log
         dones = jax.device_get(metrics["dones"])
         returns = jax.device_get(metrics["returned_episode_returns"])
         lengths = jax.device_get(metrics["returned_episode_lengths"])
@@ -576,9 +457,6 @@ if __name__ == "__main__":
         q_gaps = jax.device_get(metrics["q_gap"])
         epsilons = jax.device_get(metrics["epsilon"])
         global_steps = jax.device_get(metrics["global_step"])
-        mog_entropies = jax.device_get(metrics["mog_entropy"])
-        sigma_means = jax.device_get(metrics["sigma_mean"])
-        cf_loss_imags = jax.device_get(metrics["cf_loss_imag"])
 
         for t in range(chunk_steps):
             for e in range(args.num_envs):
@@ -589,7 +467,6 @@ if __name__ == "__main__":
                     recent_returns.append(ep_return)
                     if len(recent_returns) > 500:
                         recent_returns = recent_returns[-500:]
-
                     last_logged_step = int(global_steps[t])
                     writer.add_scalar("charts/episodic_return", ep_return, last_logged_step)
                     writer.add_scalar("charts/episodic_length", ep_length, last_logged_step)
@@ -600,26 +477,19 @@ if __name__ == "__main__":
         last_q = float(q_vals[-1])
         last_q_gap = float(q_gaps[-1])
         last_eps = float(epsilons[-1])
-        last_entropy = float(mog_entropies[-1])
-        last_sigma = float(sigma_means[-1])
-        last_cf_imag = float(cf_loss_imags[-1])
         sps = int(last_step / (time.time() - start_time)) if last_step > 0 else 0
         avg_return = float(np.mean(recent_returns)) if recent_returns else 0.0
-
-        print(f"step={last_step:>7d} | episodes={episode_count:>5d} | "
-              f"avg_return={avg_return:>7.2f} | loss={last_loss:.4f} | q_gap={last_q_gap:.4f} | "
-              f"H(pi)={last_entropy:.3f} | sigma={last_sigma:.3f} | cf_im={last_cf_imag:.4f} | "
-              f"eps={last_eps:.3f} | SPS={sps}")
-
+        print(
+            f"step={last_step:>7d} | episodes={episode_count:>5d} | "
+            f"avg_return={avg_return:>7.2f} | loss={last_loss:.4f} | q_gap={last_q_gap:.4f} | "
+            f"eps={last_eps:.3f} | SPS={sps}"
+        )
         writer.add_scalar("charts/moving_avg_return", avg_return, last_step)
         writer.add_scalar("charts/SPS", sps, last_step)
         writer.add_scalar("charts/epsilon", last_eps, last_step)
         writer.add_scalar("losses/loss", last_loss, last_step)
         writer.add_scalar("losses/q_values", last_q, last_step)
         writer.add_scalar("losses/q_gap", last_q_gap, last_step)
-        writer.add_scalar("losses/mog_entropy", last_entropy, last_step)
-        writer.add_scalar("losses/sigma_mean", last_sigma, last_step)
-        writer.add_scalar("losses/cf_loss_imag", last_cf_imag, last_step)
 
     if args.save_model:
         q_net = runner_state[0]
